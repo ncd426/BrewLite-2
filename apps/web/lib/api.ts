@@ -38,7 +38,10 @@ export type AuthResponse = {
   accessToken: string;
 };
 
+export type UserRole = 'CUSTOMER' | 'STAFF' | 'ADMIN';
+
 export type UserProfile = {
+  role: UserRole;
   id: number;
   name: string;
   email: string;
@@ -258,3 +261,128 @@ export async function fetchMyOrders(): Promise<OrderHistoryItem[]> {
 export async function fetchOrderById(id: number | string): Promise<OrderHistoryItem> {
   return apiRequest<OrderHistoryItem>(`/orders/${id}`);
 }
+// Backoffice routes are always authorized by NestJS using the role in PostgreSQL.
+export type StaffOrder = {
+  id: number;
+  status: string;
+  total: number;
+  createdAt: string;
+  channel: 'ONLINE' | 'COUNTER';
+  user: { name: string };
+  items: Array<{
+    id: number;
+    size: string;
+    qty: number;
+    toppings: string[] | null;
+    product: { name: string };
+  }>;
+};
+
+export type AdminOverview = {
+  users: number;
+  products: number;
+  orders: number;
+  completedOrders: number;
+  lowStock: number;
+  simulatedRevenue: number;
+};
+export type AdminUser = {
+  id: number;
+  email: string;
+  name: string;
+  role: UserRole;
+  loyaltyPoints: number;
+  createdAt: string;
+};
+export type Ingredient = {
+  id: number;
+  code: string;
+  name: string;
+  unit: string;
+  stockQuantity: number;
+  minStock: number;
+  importPrice: number | null;
+};
+export type RecipeLine = {
+  ingredientId: number;
+  quantity: number;
+  isOptional?: boolean;
+};
+export type AdminProduct = {
+  id: number;
+  name: string;
+  category: string | null;
+  description: string | null;
+  price: number;
+  imageUrl: string | null;
+  productIngredients: Array<RecipeLine & { ingredient: { id: number; name: string; unit: string } }>;
+};
+export type ProductForm = {
+  name: string;
+  price: number;
+  category?: string;
+  description?: string;
+  imageUrl?: string;
+  recipe: RecipeLine[];
+};
+
+export const fetchStaffOrders = () =>
+  apiRequest<StaffOrder[]>('/management/staff/orders');
+export const advanceStaffOrder = (id: number, status: string) =>
+  apiRequest<{ id: number; status: string }>(`/management/staff/orders/${id}/status`, {
+    method: 'PATCH', body: JSON.stringify({ status }),
+  });
+export const fetchAdminOverview = () =>
+  apiRequest<AdminOverview>('/management/admin/overview');
+export const fetchAdminUsers = () =>
+  apiRequest<AdminUser[]>('/management/admin/users');
+export const updateAdminUserRole = (id: number, role: UserRole) =>
+  apiRequest<AdminUser>(`/management/admin/users/${id}/role`, {
+    method: 'PATCH', body: JSON.stringify({ role }),
+  });
+export const fetchAdminProducts = () =>
+  apiRequest<AdminProduct[]>('/management/admin/products');
+export const createAdminProduct = (data: ProductForm) =>
+  apiRequest<AdminProduct>('/management/admin/products', {
+    method: 'POST', body: JSON.stringify(data),
+  });
+export const updateAdminProduct = (id: number, data: ProductForm) =>
+  apiRequest<AdminProduct>(`/management/admin/products/${id}`, {
+    method: 'PATCH', body: JSON.stringify(data),
+  });
+export const deleteAdminProduct = (id: number) =>
+  apiRequest<{ id: number; deleted: boolean }>(`/management/admin/products/${id}`, {
+    method: 'DELETE',
+  });
+export const fetchAdminInventory = () =>
+  apiRequest<Ingredient[]>('/management/admin/inventory');
+export const createAdminIngredient = (data: {
+  code: string; name: string; unit: string;
+  stockQuantity: number; minStock: number;
+}) => apiRequest<Ingredient>('/management/admin/inventory', {
+  method: 'POST', body: JSON.stringify(data),
+});
+export const adjustAdminInventory = (id: number, delta: number, minStock?: number) =>
+  apiRequest<Ingredient>(`/management/admin/inventory/${id}`, {
+    method: 'PATCH', body: JSON.stringify({ delta, ...(minStock !== undefined ? { minStock } : {}) }),
+  });
+
+export type CounterSaleInput = {
+  items: Array<{ productId: number; size: 'S' | 'M' | 'L'; qty: number; toppings: string[] }>;
+  method: PaymentMethod;
+};
+export type CounterSaleResponse = {
+  orderId: number;
+  status: 'PAID';
+  channel: 'COUNTER';
+  total: number;
+  method: PaymentMethod;
+  paymentId: number;
+  replayed: boolean;
+};
+export const createCounterSale = (data: CounterSaleInput, key: string) =>
+  apiRequest<CounterSaleResponse>('/management/staff/sales', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': key },
+    body: JSON.stringify(data),
+  });

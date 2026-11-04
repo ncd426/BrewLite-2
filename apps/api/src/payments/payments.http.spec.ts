@@ -1,3 +1,4 @@
+import { RolesGuard } from '../common/guards/roles.guard';
 
 import {
   ExecutionContext,
@@ -166,6 +167,8 @@ describe('POST /payments', () => {
         },
       ],
     })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
       .overrideGuard(JwtAuthGuard)
       .useValue({
         canActivate: (context: ExecutionContext) => {

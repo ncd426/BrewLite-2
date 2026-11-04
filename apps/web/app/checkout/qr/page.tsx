@@ -24,7 +24,7 @@ function QrPaymentContent() {
   const orderId = toPositiveInt(query.get('orderId'));
   const points = toPoints(query.get('points'));
   const cartKeys = query.get('cartKeys');
-  const clearCart = useCartStore((state) => state.clearCart);
+
   const removeItems = useCartStore((state) => state.removeItems);
   const [order, setOrder] = useState<OrderHistoryItem | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +75,7 @@ function QrPaymentContent() {
       mounted = false;
       window.clearInterval(timer);
     };
-  }, [orderId, points, clearCart, router]);
+  }, [orderId, points, router]);
 
   const confirmationUrl = useMemo(() => {
     if (orderId === null || points === null || !origin.trim()) return null;
@@ -100,7 +100,7 @@ function QrPaymentContent() {
   const removePurchasedItems = () => {
     const cartKeys = query.get('cartKeys');
     if (cartKeys === null) {
-      clearCart();
+      // Do not clear unrelated cart items for resumed orders.
       return;
     }
     removeItems(cartKeys.split('|').filter(Boolean));
@@ -139,7 +139,7 @@ function QrPaymentContent() {
           </section>
         )}
 
-        {order?.status === 'PENDING' && pointsDiscount <= order.total && (
+        {order && ['PENDING', 'PAYMENT_FAILED'].includes(order.status) && pointsDiscount <= order.total && (
           <div className="mt-6 flex flex-col items-center gap-4">
             {qrImage && (
               <img

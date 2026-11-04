@@ -1,3 +1,4 @@
+import { RolesGuard } from '../common/guards/roles.guard';
 ﻿import { randomUUID } from 'node:crypto';
 import {
   ExecutionContext,
@@ -47,6 +48,8 @@ dbDescribe('Concurrent payments - PostgreSQL integration', () => {
       controllers: [PaymentsController],
       providers: [PaymentsService, PrismaService],
     })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
       .overrideGuard(JwtAuthGuard)
       .useValue({
         canActivate(context: ExecutionContext) {

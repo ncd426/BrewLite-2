@@ -7,7 +7,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { OrderStatus as PrismaOrderStatus, PaymentStatus } from '@prisma/client';
+import { OrderChannel, OrderStatus as PrismaOrderStatus, PaymentStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderItemDto } from './dto/create-order.dto';
@@ -363,7 +363,7 @@ async changeStatus(
  */
 async getMyOrders(userId: number) {
   const orders = await this.prisma.order.findMany({
-    where: { userId },
+    where: { userId, channel: OrderChannel.ONLINE },
     orderBy: [
       { createdAt: 'desc' },
       { id: 'desc' },
@@ -386,6 +386,7 @@ async getOrderById(userId: number, orderId: number) {
     where: {
       id: orderId,
       userId,
+      channel: OrderChannel.ONLINE,
     },
     select: orderHistorySelect,
   });

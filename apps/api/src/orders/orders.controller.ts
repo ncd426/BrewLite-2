@@ -11,6 +11,9 @@ import {
 
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrdersService } from './orders.service';
 
@@ -20,12 +23,13 @@ type AuthenticatedUser = {
 };
 
 @Controller('orders')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.CUSTOMER)
 export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
   create(
     @CurrentUser() user: AuthenticatedUser,
@@ -39,7 +43,6 @@ export class OrdersController {
   }
 
   
-  @UseGuards(JwtAuthGuard)
   @Get('me')
   getMyOrders(
     @CurrentUser() user: AuthenticatedUser,
@@ -50,7 +53,6 @@ export class OrdersController {
   }
 
   
-@UseGuards(JwtAuthGuard)
 @Get(':id')
 getOrderById(
   @CurrentUser() user: AuthenticatedUser,

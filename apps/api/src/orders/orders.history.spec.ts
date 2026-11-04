@@ -1,6 +1,6 @@
 
 import { NotFoundException } from '@nestjs/common';
-import { OrderStatus } from '@prisma/client';
+import { OrderChannel, OrderStatus } from '@prisma/client';
 import { jest } from '@jest/globals';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -80,7 +80,7 @@ describe('Orders History Service', () => {
 
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: 7 },
+        where: { userId: 7, channel: OrderChannel.ONLINE },
       }),
     );
   });
@@ -128,6 +128,7 @@ describe('Orders History Service', () => {
         where: {
           id: 9,
           userId: 99,
+          channel: OrderChannel.ONLINE,
         },
       }),
     );

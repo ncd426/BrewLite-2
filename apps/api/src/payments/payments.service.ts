@@ -9,6 +9,7 @@ import {
 import { awardLoyaltyPointsOnce, VND_PER_REDEEMED_POINT } from './loyalty-points';
 import {
   OrderStatus,
+  OrderChannel,
   Payment,
   PaymentStatus,
   Prisma,
@@ -91,6 +92,7 @@ export class PaymentsService {
             userId: true,
             total: true,
             status: true,
+            channel: true,
           },
         });
 
@@ -98,6 +100,10 @@ export class PaymentsService {
           throw new NotFoundException(
             `Order ${orderId} not found`,
           );
+        }
+
+        if (order.channel === OrderChannel.COUNTER) {
+          throw new ForbiddenException('Counter sales are managed by staff');
         }
 
         if (order.userId !== userId) {

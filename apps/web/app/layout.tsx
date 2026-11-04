@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Header } from '@/components/Header';
+import { WorkRouteAccess } from '@/components/WorkRouteAccess';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="bg-amber-50 text-slate-800">
         <Header />
-        {children}
+        <WorkRouteAccess>{children}</WorkRouteAccess>
         <Toaster 
           position="top-right" 
           richColors 
