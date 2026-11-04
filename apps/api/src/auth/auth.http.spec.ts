@@ -1,4 +1,4 @@
-
+import { PrismaService } from '../prisma/prisma.service';
 import { jest } from '@jest/globals';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -86,6 +86,22 @@ const usersService = {
         providers: [
           AuthService,
           JwtStrategy,
+
+          {
+            provide: PrismaService,
+            useValue: {
+              user: {
+                findUnique: async ({
+                  where,
+                }: {
+                  where: { id: number };
+                }) => ({
+                  id: where.id,
+                  role: 'CUSTOMER',
+                }),
+              },
+            },
+          },
 
           {
             provide: OrdersService,
