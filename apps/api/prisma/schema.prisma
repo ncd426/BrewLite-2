@@ -51,6 +51,7 @@ model User {
   name          String   @default("")
   email         String   @unique
   passwordHash  String
+  role          UserRole @default(CUSTOMER)
   loyaltyPoints Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -61,6 +62,7 @@ model Order {
   id        Int         @id @default(autoincrement())
   userId    Int
   status    OrderStatus @default(PENDING)
+  channel   OrderChannel @default(ONLINE)
   total     Int
   discountAmount Int @default(0)
   promotionId Int?
@@ -71,6 +73,8 @@ model Order {
   items     OrderItem[]
   payments  Payment[]
   promotion Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+
+  @@index([channel])
 }
 
 model OrderItem {
@@ -97,6 +101,17 @@ model Payment {
   status         PaymentStatus @default(PENDING)
   createdAt      DateTime     @default(now())
   order          Order        @relation(fields: [orderId], references: [id])
+}
+
+enum UserRole {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+enum OrderChannel {
+  ONLINE
+  COUNTER
 }
 
 enum OrderStatus {

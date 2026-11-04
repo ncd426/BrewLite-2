@@ -1,12 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { login, register, saveAccessToken } from '@/lib/api';
+import { fetchMyProfile, login, register, saveAccessToken } from '@/lib/api';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,10 +22,22 @@ export default function LoginPage() {
         ? await register(name, email, password)
         : await login(email, password);
       saveAccessToken(auth.accessToken, auth.name, auth.email);
-      // Return to a QR confirmation only when the path is known-safe.
       const next = new URLSearchParams(window.location.search).get('next');
-      const safePath = next?.startsWith('/checkout/confirm?') ? next : '/cart';
-      router.replace(safePath as any);
+      const profile = await fetchMyProfile();
+      const workArea = profile.role === 'ADMIN' ? '/admin' : profile.role === 'STAFF' ? '/staff' : null;
+      // Work accounts cannot enter customer checkout/cart/history, including via next=...
+      const safeWorkNext = next === '/staff' || next === '/staff/sales' ||
+        (next === '/admin' && profile.role === 'ADMIN');
+      const safeCustomerNext = next && (
+        next === '/cart' || next === '/orders' ||
+        next.startsWith('/checkout/confirm?') || next.startsWith('/checkout/qr?') ||
+        next.startsWith('/checkout/resume?')
+      );
+      const destination = workArea
+        ? safeWorkNext && next ? next : workArea
+        : safeCustomerNext && next ? next : '/cart';
+      // Full navigation also resets stale customer/worker UI state.
+      window.location.replace(destination);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể xác thực tài khoản.');
     } finally {

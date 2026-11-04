@@ -1,3 +1,4 @@
+import { RolesGuard } from '../common/guards/roles.guard';
 import { randomUUID } from 'node:crypto';
 import { ExecutionContext, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -34,6 +35,8 @@ dbDescribe('Promotion preview and checkout - PostgreSQL integration', () => {
       controllers: [OrdersController, PromotionPreviewController],
       providers: [OrdersService, PromotionPreviewService, PrismaService],
     })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
       .overrideGuard(JwtAuthGuard)
       .useValue({
         canActivate(context: ExecutionContext) {

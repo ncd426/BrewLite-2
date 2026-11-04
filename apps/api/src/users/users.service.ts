@@ -49,6 +49,7 @@ export class UsersService {
         name: true,
         email: true,
         loyaltyPoints: true,
+        role: true,
         createdAt: true,
       },
     });

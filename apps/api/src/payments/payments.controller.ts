@@ -19,6 +19,9 @@ import {
 
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 import { PaymentsService } from './payments.service';
 
 class PaymentDto {
@@ -51,12 +54,13 @@ type AuthenticatedUser = {
 };
 
 @Controller('payments')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.CUSTOMER)
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
   pay(
     @CurrentUser() user: AuthenticatedUser,

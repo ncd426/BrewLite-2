@@ -8,6 +8,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { UsersModule } from './users/users.module';
+import { BackofficeModule } from './backoffice/backoffice.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     OrdersModule,
     PaymentsModule,
+    BackofficeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

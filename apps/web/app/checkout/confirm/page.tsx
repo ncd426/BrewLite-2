@@ -28,7 +28,7 @@ function parsePoints(raw: string | null): number | null {
 function ConfirmContent() {
   const query = useSearchParams();
   const router = useRouter();
-  const clearCart = useCartStore((state) => state.clearCart);
+
   const removeItems = useCartStore((state) => state.removeItems);
   const orderId = parseOrderId(query.get('orderId'));
   const points = parsePoints(query.get('points'));
@@ -76,7 +76,7 @@ function ConfirmContent() {
   const removePurchasedItems = () => {
     const cartKeys = query.get('cartKeys');
     if (cartKeys === null) {
-      clearCart();
+      // Do not clear unrelated cart items for resumed orders.
       return;
     }
     removeItems(cartKeys.split('|').filter(Boolean));
@@ -91,7 +91,7 @@ function ConfirmContent() {
       // A persisted key ensures browser retries do not create a second payment.
       const storageKey = `brewlite-demo-idempotency:${orderId}:${method}:${points}`;
       let key = window.sessionStorage.getItem(storageKey);
-      if (!key) {
+      if (!key || order.status === 'PAYMENT_FAILED') {
         key = crypto.randomUUID();
         window.sessionStorage.setItem(storageKey, key);
       }
