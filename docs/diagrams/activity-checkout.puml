@@ -1,0 +1,114 @@
+@startuml
+' A2-07 - Activity diagram (checkout end-to-end)
+' Cơ sở: Assignment 2 Task 2.1, docs/requirements/use-case-checkout.md,
+'          docs/requirements/srs.md và ảnh giao diện BrewLite hiện tại.
+' Lưu ý: các nhánh lỗi mô tả hành vi yêu cầu, không xác nhận đã test trên code.
+!pragma useVerticalIf on
+skinparam BackgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "DejaVu Sans"
+skinparam activity {
+  BackgroundColor #FFF9E9
+  BorderColor #9E501C
+  FontColor #283445
+  DiamondBackgroundColor #FFF0CA
+  DiamondBorderColor #A96520
+  ArrowColor #4E6178
+  StartColor #237A5E
+  EndColor #A84A44
+  BarColor #4E6178
+}
+skinparam ArrowFontColor #334155
+skinparam TitleFontColor #1D3553
+
+title A2-07 - Activity Diagram: Đặt hàng và thanh toán BrewLite\n(Menu -> Chi tiết -> Giỏ hàng -> Đặt đơn -> Xác nhận mô phỏng -> Theo dõi)
+
+|Khách hàng|
+start
+:Mở BrewLite; xem menu;
+|Next.js (Frontend)|
+:Gọi GET /products;\nHiển thị ảnh, tên, giá và tình trạng hàng;
+|Khách hàng|
+:Chọn đồ uống, size, topping;\nThêm vào giỏ hàng;
+|Next.js (Frontend)|
+:Hiển thị giỏ hàng, số lượng và tổng tiền;
+if (Giỏ hàng trống?) then (Có)
+  :Thông báo giỏ trống;\nCho phép trở về menu;
+  stop
+else (Không)
+endif
+
+|Khách hàng|
+:Chọn "Tiến hành thanh toán";
+|Next.js (Frontend)|
+if (JWT hợp lệ?) then (Không)
+  :Chuyển đến /login?redirect=/checkout;\nGiữ nguyên giỏ hàng;
+  |Khách hàng|
+  :Đăng nhập;
+  |NestJS API / PostgreSQL|
+  :Kiểm tra tài khoản, cấp JWT;
+  if (Đăng nhập thành công?) then (Không)
+    |Next.js (Frontend)|
+    :Báo lỗi đăng nhập; giữ giỏ hàng;
+    stop
+  else (Có)
+    |Next.js (Frontend)|
+    :Trở về /checkout;
+  endif
+else (Có)
+endif
+
+|Khách hàng|
+:Kiểm tra món đã chọn;\nChọn MOMO (QR) hoặc CARD;\nCó thể dùng mã giảm giá / điểm thưởng;
+|Next.js (Frontend)|
+:Kiểm tra dữ liệu đầu vào;\nGửi POST /orders;
+|NestJS API / PostgreSQL|
+:Kiểm tra JWT, tính lại tổng tiền;\nKiểm tra tồn kho trong transaction;
+if (Còn đủ hàng và dữ liệu hợp lệ?) then (Không)
+  :Từ chối/rollback tạo đơn;
+  |Next.js (Frontend)|
+  :Hiển thị lỗi hết hàng / dữ liệu sai;\nGiữ nguyên giỏ để chỉnh sửa;
+  stop
+else (Có)
+  :Tạo Order và OrderItem;\nTrạng thái PENDING;
+endif
+
+|Next.js (Frontend)|
+if (Phương thức thanh toán?) then (MOMO / QR)
+  :Hiển thị /checkout/qr;\nQR chỉ dùng để xác nhận mô phỏng;
+  |Khách hàng|
+  :Mở trang xác nhận QR và bấm xác nhận;\n(Không chuyển tiền ngân hàng thật);
+else (CARD)
+  |Next.js (Frontend)|
+  :Hiển thị /checkout/confirm;
+  |Khách hàng|
+  :Xác nhận thanh toán thẻ mô phỏng;
+endif
+
+|Next.js (Frontend)|
+:Gửi yêu cầu POST /payments\nđính kèm Idempotency-Key;
+|NestJS API / PostgreSQL|
+:Kiểm tra Idempotency-Key;\nTránh ghi nhận thanh toán trùng;
+if (Thanh toán thành công?) then (Không)
+  :Payment FAILED; Order PAYMENT_FAILED;
+  |Next.js (Frontend)|
+  :Thông báo lỗi / cho phép thử lại;\nKHÔNG xóa giỏ hàng;
+  stop
+else (Có)
+  :Payment SUCCESS; Order PAID;
+endif
+
+|Next.js (Frontend)|
+:Xóa mặt hàng đã mua khỏi giỏ;\nHiển thị /order-success và mã đơn;
+|Khách hàng|
+:Mở lịch sử để theo dõi trạng thái đơn;
+|Next.js (Frontend)|
+:Gọi GET /orders/me;
+|NestJS API / PostgreSQL|
+:Trả mã đơn, trạng thái mới nhất;
+|Next.js (Frontend)|
+:Hiển thị PENDING / PAID / PREPARING /\nREADY / COMPLETED (theo trạng thái thực tế);
+|Khách hàng|
+stop
+
+@enduml
