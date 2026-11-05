@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1710 3520" width="1710" height="3520" role="img" aria-label="A2-07 Activity Diagram quy trình checkout BrewLite">
+<defs><marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 9 3.5 L 0 7 z" fill="#627488"/></marker></defs>
+<rect width="1710" height="3520" fill="#FFFFFF"/>
+<rect x="35" y="20" width="1640" height="115" rx="20" fill="#192E45"/>
+<text x="85" y="66" font-family="DejaVu Sans, sans-serif" font-size="33" font-weight="700" fill="#FFFFFF" text-anchor="start" >A2-07  |  ACTIVITY DIAGRAM — BREWLITE</text>
+<text x="85" y="105" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#DCE9F5" text-anchor="start" >Luồng khách hàng: Menu → Giỏ hàng → Đặt đơn → Xác nhận thanh toán mô phỏng → Theo dõi</text>
+<rect x="60" y="160" width="500" height="3170" rx="16" fill="#F1F7FF" stroke="#D8E1E8" stroke-width="1"/>
+<rect x="60" y="160" width="500" height="58" rx="12" fill="#244F7A"/>
+<rect x="60" y="197" width="500" height="21" fill="#244F7A"/>
+<text x="320" y="198" font-family="DejaVu Sans, sans-serif" font-size="23" font-weight="700" fill="#FFFFFF" text-anchor="middle" >KHÁCH HÀNG</text>
+<rect x="595" y="160" width="500" height="3170" rx="16" fill="#FFF8ED" stroke="#D8E1E8" stroke-width="1"/>
+<rect x="595" y="160" width="500" height="58" rx="12" fill="#AB5919"/>
+<rect x="595" y="197" width="500" height="21" fill="#AB5919"/>
+<text x="855" y="198" font-family="DejaVu Sans, sans-serif" font-size="23" font-weight="700" fill="#FFFFFF" text-anchor="middle" >NEXT.JS / FRONTEND</text>
+<rect x="1130" y="160" width="500" height="3170" rx="16" fill="#F0FAF6" stroke="#D8E1E8" stroke-width="1"/>
+<rect x="1130" y="160" width="500" height="58" rx="12" fill="#19735E"/>
+<rect x="1130" y="197" width="500" height="21" fill="#19735E"/>
+<text x="1390" y="198" font-family="DejaVu Sans, sans-serif" font-size="23" font-weight="700" fill="#FFFFFF" text-anchor="middle" >NESTJS API / DATABASE</text>
+<line x1="74" y1="300" x2="1640" y2="300" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="415" x2="1640" y2="415" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="530" x2="1640" y2="530" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="645" x2="1640" y2="645" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="760" x2="1640" y2="760" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="875" x2="1640" y2="875" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="990" x2="1640" y2="990" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="1105" x2="1640" y2="1105" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="1220" x2="1640" y2="1220" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="1335" x2="1640" y2="1335" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="1450" x2="1640" y2="1450" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="1565" x2="1640" y2="1565" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="1680" x2="1640" y2="1680" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="1795" x2="1640" y2="1795" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="1910" x2="1640" y2="1910" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2025" x2="1640" y2="2025" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2140" x2="1640" y2="2140" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2255" x2="1640" y2="2255" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2370" x2="1640" y2="2370" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2485" x2="1640" y2="2485" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2600" x2="1640" y2="2600" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2715" x2="1640" y2="2715" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2830" x2="1640" y2="2830" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="2945" x2="1640" y2="2945" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="3060" x2="1640" y2="3060" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="3175" x2="1640" y2="3175" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<line x1="74" y1="3290" x2="1640" y2="3290" stroke="#E4E9ED" stroke-width="1" stroke-dasharray="5,9"/>
+<path d="M 320 267.0 V 312.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 320 398.0 V 410.0 H 855 V 422.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 508.0 V 520.0 H 320 V 532.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 320 618.0 V 630.0 H 855 V 642.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 728.0 V 744.5" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 845.5 V 867.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<rect x="858.0" y="849.5" width="75" height="27" rx="10" fill="#FFFFFF" stroke="#D8E1E8"/>
+<text x="895" y="868.5" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#485E71" text-anchor="middle" >Có</text>
+<path d="M 855 845.5 V 913.8 H 320 V 982.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<rect x="550.5" y="886.8" width="75" height="27" rx="10" fill="#FFFFFF" stroke="#D8E1E8"/>
+<text x="587.5" y="905.75" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#485E71" text-anchor="middle" >Không</text>
+<path d="M 320 1068.0 V 1078.8 H 855 V 1089.5" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 1190.5 V 1201.2 H 320 V 1212.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<rect x="550.5" y="1174.2" width="75" height="27" rx="10" fill="#FFFFFF" stroke="#D8E1E8"/>
+<text x="587.5" y="1193.25" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#485E71" text-anchor="middle" >Không</text>
+<path d="M 855 1190.5 V 1258.8 H 320 V 1327.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<rect x="550.5" y="1231.8" width="75" height="27" rx="10" fill="#FFFFFF" stroke="#D8E1E8"/>
+<text x="587.5" y="1250.75" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#485E71" text-anchor="middle" >Có</text>
+<path d="M 320 1298.0 V 1327.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 320 1413.0 V 1427.5 H 855 V 1442.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 1528.0 V 1542.5 H 1390 V 1557.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 1390 1643.0 V 1664.5" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 1390 1765.5 V 1776.2 H 855 V 1787.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<rect x="1085.5" y="1749.2" width="75" height="27" rx="10" fill="#FFFFFF" stroke="#D8E1E8"/>
+<text x="1122.5" y="1768.25" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#485E71" text-anchor="middle" >Không</text>
+<path d="M 1390 1765.5 V 1902.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<rect x="1393.0" y="1769.5" width="75" height="27" rx="10" fill="#FFFFFF" stroke="#D8E1E8"/>
+<text x="1430" y="1788.5" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#485E71" text-anchor="middle" >Có</text>
+<path d="M 1390 1988.0 V 2002.5 H 855 V 2017.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 2103.0 V 2117.5 H 320 V 2132.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 320 2218.0 V 2232.5 H 855 V 2247.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 2333.0 V 2347.5 H 1390 V 2362.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 1390 2448.0 V 2469.5" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 1390 2570.5 V 2581.2 H 855 V 2592.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<rect x="1085.5" y="2554.2" width="75" height="27" rx="10" fill="#FFFFFF" stroke="#D8E1E8"/>
+<text x="1122.5" y="2573.25" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#485E71" text-anchor="middle" >Không</text>
+<path d="M 1390 2570.5 V 2707.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<rect x="1393.0" y="2574.5" width="75" height="27" rx="10" fill="#FFFFFF" stroke="#D8E1E8"/>
+<text x="1430" y="2593.5" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="700" fill="#485E71" text-anchor="middle" >Có</text>
+<path d="M 1390 2793.0 V 2807.5 H 855 V 2822.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 2908.0 V 2922.5 H 320 V 2937.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 320 3023.0 V 3037.5 H 855 V 3052.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<path d="M 855 3138.0 V 3163.0 H 320 V 3188.0" fill="none" stroke="#627488" stroke-width="2.6" marker-end="url(#arr)" stroke-linejoin="round"/>
+<circle cx="320" cy="245" r="19" fill="#178763" stroke="#FFFFFF" stroke-width="4"/>
+<text x="360" y="252" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#147654" text-anchor="start" >BẮT ĐẦU</text>
+<rect x="100.0" y="316.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="320" y="362" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Mở BrewLite; xem menu</text>
+<rect x="635.0" y="426.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="855" y="456" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >GET /products; hiển thị ảnh, tên,</text>
+<text x="855" y="485" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >giá và tình trạng còn hàng</text>
+<rect x="100.0" y="536.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="320" y="566" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Chọn size, topping;</text>
+<text x="320" y="595" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >thêm đồ uống vào giỏ</text>
+<rect x="635.0" y="646.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="855" y="692" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Hiện giỏ, số lượng và tổng tiền</text>
+<path d="M 855 748.5 L 1052.0 795 L 855 841.5 L 658.0 795 Z" fill="#FFF0CA" stroke="#AE731D" stroke-width="3"/>
+<text x="855" y="802" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="600" fill="#1E3449" text-anchor="middle" >Giỏ hàng trống?</text>
+<rect x="635.0" y="871.0" width="440" height="78" rx="15" fill="#FFF0EC" stroke="#BC4844" stroke-width="2.2"/>
+<rect x="635.0" y="871.0" width="10" height="78" rx="5" fill="#BC4844"/>
+<text x="855" y="901" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Có: thông báo giỏ trống</text>
+<text x="855" y="930" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Về menu; dừng lần đặt hàng</text>
+<rect x="100.0" y="986.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="320" y="1032" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Không: chọn Tiến hành thanh toán</text>
+<path d="M 855 1093.5 L 1052.0 1140 L 855 1186.5 L 658.0 1140 Z" fill="#FFF0CA" stroke="#AE731D" stroke-width="3"/>
+<text x="855" y="1147" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="600" fill="#1E3449" text-anchor="middle" >JWT hợp lệ?</text>
+<rect x="100.0" y="1216.0" width="440" height="78" rx="15" fill="#E8F3FE" stroke="#5D84B5" stroke-width="2.2"/>
+<text x="320" y="1246" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Không: đăng nhập; giữ giỏ</text>
+<text x="320" y="1275" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Thành công quay lại /checkout</text>
+<rect x="100.0" y="1331.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="320" y="1361" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Chọn MOMO (QR) / CARD</text>
+<text x="320" y="1390" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Mã giảm giá, điểm (nếu dùng)</text>
+<rect x="635.0" y="1446.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="855" y="1492" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Kiểm tra dữ liệu; gửi POST /orders</text>
+<rect x="1170.0" y="1561.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="1390" y="1591" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Xác thực, tự tính tổng tiền,</text>
+<text x="1390" y="1620" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >kiểm tra tồn kho trong transaction</text>
+<path d="M 1390 1668.5 L 1587.0 1715 L 1390 1761.5 L 1193.0 1715 Z" fill="#FFF0CA" stroke="#AE731D" stroke-width="3"/>
+<text x="1390" y="1722" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="600" fill="#1E3449" text-anchor="middle" >Còn hàng, dữ liệu hợp lệ?</text>
+<rect x="635.0" y="1791.0" width="440" height="78" rx="15" fill="#FFF0EC" stroke="#BC4844" stroke-width="2.2"/>
+<rect x="635.0" y="1791.0" width="10" height="78" rx="5" fill="#BC4844"/>
+<text x="855" y="1821" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Không: rollback / từ chối</text>
+<text x="855" y="1850" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Báo hết hàng; giữ giỏ</text>
+<rect x="1170.0" y="1906.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="1390" y="1936" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Có: tạo Order, OrderItem</text>
+<text x="1390" y="1965" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Trạng thái ban đầu PENDING</text>
+<rect x="635.0" y="2021.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="855" y="2051" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Hiển thị QR demo hoặc màn hình</text>
+<text x="855" y="2080" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >xác nhận CARD (không thu tiền thật)</text>
+<rect x="100.0" y="2136.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="320" y="2166" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Xác nhận thanh toán mô phỏng</text>
+<text x="320" y="2195" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >qua QR hoặc trang xác nhận thẻ</text>
+<rect x="635.0" y="2251.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="855" y="2281" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Gửi POST /payments</text>
+<text x="855" y="2310" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >với Idempotency-Key</text>
+<rect x="1170.0" y="2366.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="1390" y="2396" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Kiểm tra request trùng</text>
+<text x="1390" y="2425" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Xử lý thanh toán mô phỏng</text>
+<path d="M 1390 2473.5 L 1587.0 2520 L 1390 2566.5 L 1193.0 2520 Z" fill="#FFF0CA" stroke="#AE731D" stroke-width="3"/>
+<text x="1390" y="2527" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="600" fill="#1E3449" text-anchor="middle" >Thanh toán thành công?</text>
+<rect x="635.0" y="2596.0" width="440" height="78" rx="15" fill="#FFF0EC" stroke="#BC4844" stroke-width="2.2"/>
+<rect x="635.0" y="2596.0" width="10" height="78" rx="5" fill="#BC4844"/>
+<text x="855" y="2626" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Không: PAYMENT_FAILED</text>
+<text x="855" y="2655" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Báo lỗi; giữ giỏ, cho thử lại</text>
+<rect x="1170.0" y="2711.0" width="440" height="78" rx="15" fill="#E4F5EB" stroke="#21825D" stroke-width="2.2"/>
+<rect x="1170.0" y="2711.0" width="10" height="78" rx="5" fill="#21825D"/>
+<text x="1390" y="2741" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Có: Payment SUCCESS</text>
+<text x="1390" y="2770" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Order chuyển sang PAID</text>
+<rect x="635.0" y="2826.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="855" y="2856" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Xóa các món đã mua khỏi giỏ</text>
+<text x="855" y="2885" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Hiện /order-success, mã đơn</text>
+<rect x="100.0" y="2941.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="320" y="2987" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >Xem lịch sử, theo dõi đơn</text>
+<rect x="635.0" y="3056.0" width="440" height="78" rx="15" fill="#FFFFFF" stroke="#B8C5D3" stroke-width="2.2"/>
+<text x="855" y="3086" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="500" fill="#1E3449" text-anchor="middle" >GET /orders/me</text>
+<text x="855" y="3115" font-family="DejaVu Sans, sans-serif" font-size="19" font-weight="400" fill="#425568" text-anchor="middle" >Hiển thị trạng thái đơn mới nhất</text>
+<circle cx="320" cy="3210" r="22" fill="white" stroke="#304E67" stroke-width="3.5"/>
+<circle cx="320" cy="3210" r="12" fill="#304E67"/>
+<text x="365" y="3216" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700" fill="#304E67" text-anchor="start" >KẾT THÚC</text>
+<rect x="60" y="3360" width="1580" height="112" rx="13" fill="#F5F7FA" stroke="#DCE3EB"/>
+<text x="85" y="3392" font-family="DejaVu Sans, sans-serif" font-size="20" font-weight="700" fill="#223A52" text-anchor="start" >CHÚ GIẢI</text>
+<rect x="260" y="3380" width="40" height="24" rx="5" fill="#FFFFFF" stroke="#8598A8"/>
+<text x="312" y="3399" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="400" fill="#385066" text-anchor="start" >Hoạt động</text>
+<rect x="590" y="3380" width="40" height="24" rx="5" fill="#FFF0CA" stroke="#8598A8"/>
+<text x="642" y="3399" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="400" fill="#385066" text-anchor="start" >Rẽ nhánh / decision</text>
+<rect x="920" y="3380" width="40" height="24" rx="5" fill="#FFF0EC" stroke="#8598A8"/>
+<text x="972" y="3399" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="400" fill="#385066" text-anchor="start" >Ngoại lệ / dừng</text>
+<rect x="1250" y="3380" width="40" height="24" rx="5" fill="#E4F5EB" stroke="#8598A8"/>
+<text x="1302" y="3399" font-family="DejaVu Sans, sans-serif" font-size="17" font-weight="400" fill="#385066" text-anchor="start" >Trạng thái thành công</text>
+<text x="85" y="3449" font-family="DejaVu Sans, sans-serif" font-size="16" font-weight="400" fill="#64768A" text-anchor="start" >Cơ sở: SRS + UC-CHECKOUT + ảnh BrewLite. QR chỉ dùng để XÁC NHẬN mô phỏng; các nhánh lỗi cần kiểm thử bằng code trước khi nghiệm thu.</text>
+</svg>
