@@ -1,0 +1,125 @@
+@startuml sequence-checkout
+autonumber
+skinparam BoxPadding 15
+skinparam ParticipantPadding 10
+skinparam ResponseMessageBelowArrow true
+skinparam style strictuml
+
+title Sequence Diagram: Đặt hàng & Thanh toán (BrewLite Checkout)
+
+actor "Customer" as User
+box "Frontend" #EBF5FB
+    participant "Next.js (Web)" as Client
+end box
+
+box "Backend (NestJS)" #FEF9E7
+    participant "API Gateway / Guards" as Guard
+    participant "Order Service" as OrderSvc
+    participant "Payment Service" as PaySvc
+end box
+
+database "PostgreSQL (Prisma)" as DB
+participant "Payment Gateway\n(Mock / VNPay)" as Gateway
+
+== 1. Tải thông tin trang Checkout ==
+User -> Client: Mở màn hình /checkout
+activate Client
+Client -> Guard: GET /users/me (Bearer Token)
+activate Guard
+
+alt Token không hợp lệ / Hết hạn
+    Guard --> Client: 401 Unauthorized
+    Client --> User: Redirect sang /login?redirect=/checkout
+else Token hợp lệ
+    Guard -> OrderSvc: getCheckoutProfile(userId)
+    activate OrderSvc
+    OrderSvc -> DB: Query User Profile & Loyalty Points
+    activate DB
+    DB --> OrderSvc: User data & điểm hiện có
+    deactivate DB
+    OrderSvc --> Guard: User Profile & Points DTO
+    deactivate OrderSvc
+    Guard --> Client: 200 OK (Profile & Loyalty Points)
+    deactivate Guard
+    Client --> User: Hiển thị giỏ hàng, điểm thưởng, form thanh toán
+end
+deactivate Client
+
+== 2. Đặt hàng & Thực hiện thanh toán ==
+User -> Client: Chọn phương thức (MOMO/CARD) & Xác nhận thanh toán
+activate Client
+Client -> Client: Validate items > 0, points <= maxRedeemable
+
+Client -> Guard: POST /orders (Body: items, pointsRedeemed, promoCode)\nHeader: Authorization (Bearer Token)
+activate Guard
+Guard -> OrderSvc: createOrder(dto, userId)
+activate OrderSvc
+
+OrderSvc -> DB: BEGIN TRANSACTION
+activate DB
+OrderSvc -> DB: Query kiểm tra & giữ tồn kho nguyên liệu (Optimistic Lock)
+alt Hết hàng / Không đủ tồn kho
+    DB --> OrderSvc: Out of stock / Concurrency conflict
+    OrderSvc -> DB: ROLLBACK
+    OrderSvc --> Guard: 400 Bad Request / 409 Conflict
+    Guard --> Client: 400 / 409 (Món/Nguyên liệu không đủ số lượng)
+    Client --> User: Báo lỗi hết hàng (GIỮ NGUYÊN GIỎ HÀNG)
+else Đủ tồn kho & Tạo đơn thành công
+    OrderSvc -> DB: Tính lại tiền từ DB, tạm trừ điểm thưởng\nTạo Order (status = PENDING)
+    DB --> OrderSvc: Order created (id, orderCode, totalAmount)
+    OrderSvc -> DB: COMMIT
+    deactivate DB
+    OrderSvc --> Guard: 201 Created (orderId, orderCode, amount)
+    deactivate OrderSvc
+    Guard --> Client: 201 Created (orderId, orderCode, amount)
+    deactivate Guard
+
+    == 3. Xử lý thanh toán với Idempotency Key ==
+    Client -> Client: Sinh uuid v4 (Idempotency-Key)
+    Client -> Guard: POST /payments\nHeader: Idempotency-Key: <UUID>, Authorization: Bearer\nBody: { orderId, method }
+    activate Guard
+    Guard -> PaySvc: processPayment(dto, idempotencyKey)
+    activate PaySvc
+
+    PaySvc -> DB: Tìm Payment theo idempotencyKey
+    activate DB
+    DB --> PaySvc: Kết quả kiểm tra
+    deactivate DB
+
+    alt Idempotency-Key đã tồn tại (Replay Request)
+        PaySvc --> Guard: Trả về kết quả giao dịch trước đó (cached response)
+        Guard --> Client: 200 OK (Previous Payment Result)
+    else Khóa mới: Thực hiện thanh toán qua Gateway
+        PaySvc -> Gateway: Gửi yêu cầu trừ tiền / Giao dịch Sandbox
+        activate Gateway
+        Gateway --> PaySvc: Phản hồi kết quả (SUCCESS / FAILED)
+        deactivate Gateway
+
+        alt Thanh toán Thất bại (Payment Failed)
+            PaySvc -> DB: BEGIN TRANSACTION
+            activate DB
+            PaySvc -> DB: Lưu Payment (status = FAILED)\nCập nhật Order (status = PAYMENT_FAILED)\nHoàn lại điểm thưởng & giải phóng tồn kho
+            PaySvc -> DB: COMMIT
+            deactivate DB
+            PaySvc --> Guard: 400 Payment Failed
+            Guard --> Client: 400 (Thanh toán thất bại)
+            Client --> User: Báo lỗi "Thanh toán thất bại" (GIỮ NGUYÊN GIỎ HÀNG)
+        else Thanh toán Thành công (Payment Success)
+            PaySvc -> DB: BEGIN TRANSACTION
+            activate DB
+            PaySvc -> DB: Lưu Payment (status = SUCCESS, key = UUID)\nCập nhật Order (status = PAID)\nCộng điểm thưởng mới (Loyalty Points)\nChốt trừ kho nguyên liệu chính thức
+            PaySvc -> DB: COMMIT
+            deactivate DB
+            PaySvc --> Guard: 200 OK (Payment Success)
+            deactivate PaySvc
+            Guard --> Client: 200 OK (orderId, status = PAID)
+            deactivate Guard
+
+            Client -> Client: Xóa sạch giỏ hàng (clearCart)
+            Client --> User: Chuyển hướng sang màn hình xác nhận (/order-success)
+        end
+    end Stop please now.
+end
+deactivate Client
+
+@enduml
