@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1800" style="width: 100%; height: auto; max-width: 2000px" role="img" aria-labelledby="title desc">
+  <title id="title">BrewLite - Domain Class Diagram</title>
+  <desc id="desc">Lược đồ lớp domain cho User, Product, Order, OrderItem, Payment, Promotion và LoyaltyTransaction, với thuộc tính, quan hệ, bội số, enum và ghi chú tình trạng persist.</desc>
+  <defs>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #24352e; }
+      .title { font-size: 30px; font-weight: 700; }
+      .class-header { fill: #e8f0ea; stroke: #315b4a; stroke-width: 2; }
+      .class-body { fill: #ffffff; stroke: #315b4a; stroke-width: 2; }
+      .enum-header { fill: #e8eef3; stroke: #496577; stroke-width: 2; }
+      .enum-body { fill: #ffffff; stroke: #496577; stroke-width: 2; }
+      .class-name { font-size: 19px; font-weight: 700; text-anchor: middle; }
+      .stereotype { font-size: 13px; font-weight: 600; text-anchor: middle; fill: #64746b; }
+      .attribute { font-size: 15px; }
+      .method { font-size: 14px; fill: #315b4a; }
+      .method-separator { stroke: #9aaca0; stroke-width: 1.2; stroke-dasharray: 4 3; }
+      .relation { fill: none; stroke: #52685d; stroke-width: 2; }
+      .multiplicity { font-size: 14px; font-weight: 700; fill: #334d40; }
+      .relation-name { font-size: 13px; fill: #53665b; paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; }
+      .note { fill: #fff7df; stroke: #b7892c; stroke-width: 1.5; }
+      .note-text { font-size: 14px; }
+      .enum-name { font-size: 17px; font-weight: 700; text-anchor: middle; }
+      .enum-value { font-size: 14px; }
+      .conceptual { stroke-dasharray: 8 5; }
+    </style>
+  </defs>
+  <rect width="2000" height="1800" fill="#ffffff"/>
+  <text class="title" x="1000" y="52" text-anchor="middle">BrewLite - Domain Class Diagram</text>
+
+  <g class="relation">
+    <path d="M 520 280 L 690 280"/>
+    <path d="M 1160 280 L 1320 280"/>
+    <path d="M 925 528 L 925 590"/>
+    <path d="M 1570 486 L 1570 590"/>
+    <path d="M 1160 430 L 1220 430 L 1220 1040 L 1320 1040"/>
+    <path d="M 400 520 L 400 1050"/>
+    <path d="M 690 500 L 590 500 L 590 1150 L 520 1150"/>
+  </g>
+  <text class="multiplicity" x="530" y="268">1</text><text class="multiplicity" x="650" y="268">0..*</text>
+  <text class="relation-name" x="570" y="268">places</text>
+  <text class="multiplicity" x="1170" y="268">1</text><text class="multiplicity" x="1280" y="268">0..*</text>
+  <text class="relation-name" x="1190" y="268">contains</text>
+  <text class="multiplicity" x="940" y="550">1</text><text class="multiplicity" x="940" y="585">0..*</text>
+  <text class="relation-name" x="940" y="570">payments</text>
+  <text class="multiplicity" x="1585" y="505">0..*</text><text class="multiplicity" x="1585" y="582">1</text>
+  <text class="relation-name" x="1590" y="545">ordered as</text>
+  <text class="multiplicity" x="1168" y="420">0..1</text><text class="multiplicity" x="1325" y="1028">0..*</text>
+  <text class="relation-name" x="1232" y="740">applied to</text>
+  <text class="multiplicity" x="415" y="540">1</text><text class="multiplicity" x="415" y="1040">0..*</text>
+  <text class="relation-name" x="415" y="740">history</text>
+  <text class="multiplicity" x="655" y="493">0..1</text><text class="multiplicity" x="525" y="1138">0..*</text>
+  <text class="relation-name" x="600" y="790">related to</text>
+
+  <g>
+    <rect class="class-header" x="100" y="150" width="420" height="48"/><rect class="class-body" x="100" y="198" width="420" height="322"/>
+    <text class="class-name" x="310" y="181">User</text>
+    <text class="attribute" x="120" y="225">+ id: Int</text><text class="attribute" x="120" y="249">+ name: String</text><text class="attribute" x="120" y="273">+ email: String {unique}</text><text class="attribute" x="120" y="297">+ passwordHash: String</text><text class="attribute" x="120" y="321">+ role: UserRole = CUSTOMER</text><text class="attribute" x="120" y="345">+ loyaltyPoints: Int = 0</text><text class="attribute" x="120" y="369">+ createdAt: DateTime</text><text class="attribute" x="120" y="393">+ updatedAt: DateTime</text>
+    <line class="method-separator" x1="100" y1="410" x2="520" y2="410"/><text class="method" x="120" y="434">+ register(name, email, password): AccessToken</text><text class="method" x="120" y="458">+ login(email, password): AccessToken</text><text class="method" x="120" y="482">+ findPublicById(id): UserProfile</text>
+
+    <rect class="class-header" x="690" y="150" width="470" height="48"/><rect class="class-body" x="690" y="198" width="470" height="330"/>
+    <text class="class-name" x="925" y="181">Order</text>
+    <text class="attribute" x="710" y="225">+ id: Int</text><text class="attribute" x="710" y="249">+ userId: Int</text><text class="attribute" x="710" y="273">+ status: OrderStatus = PENDING</text><text class="attribute" x="710" y="297">+ channel: OrderChannel = ONLINE</text><text class="attribute" x="710" y="321">+ total: Int</text><text class="attribute" x="710" y="345">+ discountAmount: Int = 0</text><text class="attribute" x="710" y="369">+ promotionId: Int?</text><text class="attribute" x="710" y="393">+ loyaltyAwardedAt: DateTime?</text><text class="attribute" x="710" y="417">+ createdAt / updatedAt: DateTime</text>
+    <line class="method-separator" x1="690" y1="432" x2="1160" y2="432"/><text class="method" x="710" y="454">+ create(input): Order</text><text class="method" x="710" y="478">+ transitionOrderStatus(next): OrderStatus</text><text class="method" x="710" y="502">+ resolvePromotion(code, subtotal): Discount</text>
+
+    <rect class="class-header" x="1320" y="150" width="500" height="48"/><rect class="class-body" x="1320" y="198" width="500" height="288"/>
+    <text class="class-name" x="1570" y="181">OrderItem</text>
+    <text class="attribute" x="1340" y="225">+ id: Int</text><text class="attribute" x="1340" y="249">+ orderId: Int</text><text class="attribute" x="1340" y="273">+ productId: Int</text><text class="attribute" x="1340" y="297">+ size: String</text><text class="attribute" x="1340" y="321">+ qty: Int</text><text class="attribute" x="1340" y="345">+ unitPrice: Int?</text><text class="attribute" x="1340" y="369">+ lineTotal: Int</text><text class="attribute" x="1340" y="393">+ toppings: Json?; createdAt: DateTime</text>
+    <line class="method-separator" x1="1320" y1="408" x2="1820" y2="408"/><text class="method" x="1340" y="432">+ calculateUnitPrice(size, toppings)*: Int</text><text class="method" x="1340" y="456">+ calculateLineTotal(qty)*: Int</text>
+
+    <rect class="class-header" x="690" y="590" width="470" height="48"/><rect class="class-body" x="690" y="638" width="470" height="270"/>
+    <text class="class-name" x="925" y="621">Payment</text>
+    <text class="attribute" x="710" y="665">+ id: Int</text><text class="attribute" x="710" y="689">+ orderId: Int</text><text class="attribute" x="710" y="713">+ idempotencyKey: String {unique}</text><text class="attribute" x="710" y="737">+ amount: Int; pointsUsed: Int = 0</text><text class="attribute" x="710" y="761">+ method: String</text><text class="attribute" x="710" y="785">+ status: PaymentStatus = PENDING</text><text class="attribute" x="710" y="809">+ createdAt: DateTime</text>
+    <line class="method-separator" x1="690" y1="822" x2="1160" y2="822"/><text class="method" x="710" y="846">+ processPayment(...): Payment</text><text class="method" x="710" y="870">+ replayExistingPayment(...): Payment</text>
+
+    <rect class="class-header" x="1320" y="590" width="500" height="48"/><rect class="class-body" x="1320" y="638" width="500" height="280"/>
+    <text class="class-name" x="1570" y="621">Product</text>
+    <text class="attribute" x="1340" y="665">+ id: Int</text><text class="attribute" x="1340" y="689">+ name: String</text><text class="attribute" x="1340" y="713">+ category: String?</text><text class="attribute" x="1340" y="737">+ description: String?</text><text class="attribute" x="1340" y="761">+ price: Int; imageUrl: String?</text><text class="attribute" x="1340" y="785">+ createdAt: DateTime</text><text class="attribute" x="1340" y="809">+ updatedAt: DateTime</text>
+    <line class="method-separator" x1="1320" y1="822" x2="1820" y2="822"/><text class="method" x="1340" y="846">+ findAll(): Product[]</text><text class="method" x="1340" y="870">+ findOne(id): Product</text>
+
+    <rect class="class-header" x="1320" y="930" width="500" height="48"/><rect class="class-body" x="1320" y="978" width="500" height="250"/>
+    <text class="class-name" x="1570" y="961">Promotion</text>
+    <text class="attribute" x="1340" y="1005">+ id: Int</text><text class="attribute" x="1340" y="1029">+ code: String {unique}</text><text class="attribute" x="1340" y="1053">+ type: DiscountType</text><text class="attribute" x="1340" y="1077">+ value: Int</text><text class="attribute" x="1340" y="1101">+ minOrderTotal: Int = 0</text><text class="attribute" x="1340" y="1125">+ startsAt / expiresAt: DateTime?</text><text class="attribute" x="1340" y="1149">+ isActive: Boolean = true</text>
+    <line class="method-separator" x1="1320" y1="1162" x2="1820" y2="1162"/><text class="method" x="1340" y="1185">+ preview(items, code): PromotionQuote</text><text class="method" x="1340" y="1208">+ resolvePromotion(code, subtotal): Discount</text>
+
+    <rect class="class-header conceptual" x="100" y="1050" width="420" height="48"/><rect class="class-body conceptual" x="100" y="1098" width="420" height="235"/>
+    <text class="class-name" x="310" y="1078">LoyaltyTransaction</text><text class="stereotype" x="310" y="1094">&lt;&lt;conceptual / not persisted&gt;&gt;</text>
+    <text class="attribute" x="120" y="1125">+ id: Int</text><text class="attribute" x="120" y="1149">+ userId: Int; orderId: Int?</text><text class="attribute" x="120" y="1173">+ type: LoyaltyTransactionType</text><text class="attribute" x="120" y="1197">+ points: Int</text><text class="attribute" x="120" y="1221">+ createdAt: DateTime</text>
+    <line class="method-separator" x1="100" y1="1235" x2="520" y2="1235"/><text class="method" x="120" y="1259">+ earn(points)*: Int</text><text class="method" x="120" y="1283">+ redeem(points)*: Int</text>
+  </g>
+
+  <g>
+    <rect class="enum-header" x="100" y="1410" width="250" height="42"/><rect class="enum-body" x="100" y="1452" width="250" height="105"/><text class="enum-name" x="225" y="1438">UserRole</text>
+    <text class="enum-value" x="120" y="1478">CUSTOMER</text><text class="enum-value" x="120" y="1502">STAFF</text><text class="enum-value" x="120" y="1526">ADMIN</text>
+
+    <rect class="enum-header" x="380" y="1410" width="300" height="42"/><rect class="enum-body" x="380" y="1452" width="300" height="225"/><text class="enum-name" x="530" y="1438">OrderStatus</text>
+    <text class="enum-value" x="400" y="1478">PENDING</text><text class="enum-value" x="400" y="1502">PAID</text><text class="enum-value" x="400" y="1526">PREPARING</text><text class="enum-value" x="400" y="1550">READY</text><text class="enum-value" x="400" y="1574">COMPLETED</text><text class="enum-value" x="400" y="1598">PAYMENT_FAILED</text><text class="enum-value" x="400" y="1622">CANCELLED</text>
+
+    <rect class="enum-header" x="710" y="1410" width="240" height="42"/><rect class="enum-body" x="710" y="1452" width="240" height="80"/><text class="enum-name" x="830" y="1438">OrderChannel</text><text class="enum-value" x="730" y="1478">ONLINE</text><text class="enum-value" x="730" y="1502">COUNTER</text>
+    <rect class="enum-header" x="980" y="1410" width="240" height="42"/><rect class="enum-body" x="980" y="1452" width="240" height="105"/><text class="enum-name" x="1100" y="1438">PaymentStatus</text><text class="enum-value" x="1000" y="1478">PENDING</text><text class="enum-value" x="1000" y="1502">SUCCESS</text><text class="enum-value" x="1000" y="1526">FAILED</text>
+    <rect class="enum-header" x="1250" y="1410" width="240" height="42"/><rect class="enum-body" x="1250" y="1452" width="240" height="80"/><text class="enum-name" x="1370" y="1438">DiscountType</text><text class="enum-value" x="1270" y="1478">FIXED</text><text class="enum-value" x="1270" y="1502">PERCENT</text>
+    <rect class="enum-header" x="1520" y="1410" width="300" height="42"/><rect class="enum-body" x="1520" y="1452" width="300" height="105"/><text class="enum-name" x="1670" y="1438">LoyaltyTransactionType*</text><text class="enum-value" x="1540" y="1478">EARN</text><text class="enum-value" x="1540" y="1502">REDEEM</text>
+  </g>
+
+  <rect class="note" x="690" y="980" width="470" height="300" rx="4"/>
+  <text class="note-text" x="710" y="1010"><tspan x="710">LoyaltyTransaction và</tspan><tspan x="710" dy="21">LoyaltyTransactionType*</tspan><tspan x="710" dy="21">là mô hình khái niệm, chưa</tspan><tspan x="710" dy="21">có trong Prisma/migrations.</tspan><tspan x="710" dy="28">Hiện tại:</tspan><tspan x="710" dy="21">• User.loyaltyPoints: số dư</tspan><tspan x="710" dy="21">• Payment.pointsUsed: đổi điểm</tspan><tspan x="710" dy="21">• Order.loyaltyAwardedAt:</tspan><tspan x="725" dy="19">chống cộng thưởng lặp</tspan></text>
+  <rect class="note" x="1320" y="1240" width="500" height="100" rx="4"/>
+  <text class="note-text" x="1340" y="1268"><tspan x="1340">Payment.method là String trong schema (MOMO / CARD), không phải enum.</tspan><tspan x="1340" dy="21">OrderItem.size cũng là String; API từ chối tạo đơn rỗng.</tspan></text>
+  <text x="100" y="1760" font-size="14" fill="#617168">Nguồn: apps/api/prisma/schema.prisma. Operations map sang NestJS services/helpers, không phải instance method của Prisma records. * là operation conceptual hoặc logic inline.</text>
+</svg>

@@ -1,0 +1,186 @@
+@startuml BrewLite Domain Class Diagram
+left to right direction
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam class {
+  BackgroundColor #F4F7F5
+  BorderColor #315B4A
+  ArrowColor #52685D
+}
+skinparam note {
+  BackgroundColor #FFF7DF
+  BorderColor #B7892C
+}
+title BrewLite - Domain Class Diagram
+
+class User {
+  +id: Int
+  +name: String
+  +email: String <<unique>>
+  +passwordHash: String
+  +role: UserRole = CUSTOMER
+  +loyaltyPoints: Int = 0
+  +createdAt: DateTime
+  +updatedAt: DateTime
+  --
+  + register(name, email, password): AccessToken
+  + login(email, password): AccessToken
+  + findPublicById(id): UserProfile
+}
+
+class Product {
+  +id: Int
+  +name: String
+  +category: String?
+  +description: String?
+  +price: Int
+  +imageUrl: String?
+  +createdAt: DateTime
+  +updatedAt: DateTime
+  --
+  + findAll(): Product[]
+  + findOne(id): Product
+}
+
+class Order {
+  +id: Int
+  +userId: Int
+  +status: OrderStatus = PENDING
+  +channel: OrderChannel = ONLINE
+  +total: Int
+  +discountAmount: Int = 0
+  +promotionId: Int?
+  +loyaltyAwardedAt: DateTime?
+  +createdAt: DateTime
+  +updatedAt: DateTime
+  --
+  + create(input): Order
+  + transitionOrderStatus(next): OrderStatus
+  + resolvePromotion(code, subtotal): Discount
+}
+
+class OrderItem {
+  +id: Int
+  +orderId: Int
+  +productId: Int
+  +size: String
+  +qty: Int
+  +unitPrice: Int?
+  +lineTotal: Int
+  +toppings: Json?
+  +createdAt: DateTime
+  --
+  + calculateUnitPrice(size, toppings)*: Int
+  + calculateLineTotal(qty)*: Int
+}
+
+class Payment {
+  +id: Int
+  +orderId: Int
+  +idempotencyKey: String <<unique>>
+  +amount: Int
+  +pointsUsed: Int = 0
+  +method: String
+  +status: PaymentStatus = PENDING
+  +createdAt: DateTime
+  --
+  + processPayment(...): Payment
+  + replayExistingPayment(...): Payment
+}
+
+class Promotion {
+  +id: Int
+  +code: String <<unique>>
+  +type: DiscountType
+  +value: Int
+  +minOrderTotal: Int = 0
+  +startsAt: DateTime?
+  +expiresAt: DateTime?
+  +isActive: Boolean = true
+  +createdAt: DateTime
+  --
+  + preview(items, code): PromotionQuote
+  + resolvePromotion(code, subtotal): Discount
+}
+
+class LoyaltyTransaction <<conceptual / not persisted>> {
+  +id: Int
+  +userId: Int
+  +orderId: Int?
+  +type: LoyaltyTransactionType
+  +points: Int
+  +createdAt: DateTime
+  --
+  + earn(points)*: Int
+  + redeem(points)*: Int
+}
+
+enum UserRole {
+  CUSTOMER
+  STAFF
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PREPARING
+  READY
+  COMPLETED
+  PAYMENT_FAILED
+  CANCELLED
+}
+
+enum OrderChannel {
+  ONLINE
+  COUNTER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum DiscountType {
+  FIXED
+  PERCENT
+}
+
+enum LoyaltyTransactionType <<conceptual>> {
+  EARN
+  REDEEM
+}
+
+User "1" -- "0..*" Order : places
+Order "1" -- "0..*" OrderItem : contains
+Product "1" -- "0..*" OrderItem : ordered as
+Order "1" -- "0..*" Payment : payments
+Promotion "0..1" -- "0..*" Order : applied to
+User "1" -- "0..*" LoyaltyTransaction : history
+Order "0..1" -- "0..*" LoyaltyTransaction : related to
+
+note right of LoyaltyTransaction
+Conceptual ledger class required by the domain task.
+Not present in the current Prisma schema or migrations.
+Current points are stored on User.loyaltyPoints;
+redemption is recorded on Payment.pointsUsed;
+award idempotency uses Order.loyaltyAwardedAt.
+end note
+
+note bottom
+Operation compartments map to NestJS services/helpers, not methods on Prisma record objects.
+* marks conceptual or inline behavior without a named implementation method.
+end note
+
+note bottom of OrderItem
+Order creation rejects an empty item list;
+0..* reflects the relational schema multiplicity.
+end note
+
+note bottom of Payment
+Payment.method is String in Prisma (currently MOMO / CARD),
+not a persisted enum.
+end note
+@enduml
