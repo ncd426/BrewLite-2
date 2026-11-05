@@ -1,0 +1,60 @@
+@startuml BrewLite Checkout Use Case
+left to right direction
+skinparam shadowing false
+skinparam actorStyle stickman
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F7F5
+  BorderColor #315B4A
+  ArrowColor #52685D
+}
+title BrewLite - Use Case chi tiet: Dat hang va thanh toan
+
+actor "Khach hang\n(CUSTOMER da dang nhap)" as Customer
+
+rectangle "BrewLite Web + API" {
+  usecase "Dat hang tu gio\n(POST /orders)" as PlaceOrder
+  usecase "Xem truoc ma khuyen mai" as PreviewPromotion
+  usecase "Xac thuc JWT, tai ho so\nva so du diem" as AuthProfile
+  usecase "Kiem tra gio, san pham,\nsize va topping" as ValidateCart
+  usecase "Tinh gia va xac nhan\nkhuyen mai tu server" as CalculateAmount
+  usecase "Kiem tra va tru ton\nnguyen lieu trong transaction" as CheckStock
+  usecase "Tao Order / OrderItem\n(status = PENDING)" as SavePending
+  usecase "Xac nhan thanh toan mo phong\n(POST /payments)" as ConfirmPayment
+  usecase "Xac minh chu don, trang thai,\nso tien, diem va Idempotency-Key" as VerifyPayment
+  usecase "Ghi Payment va chuyen\ntrang thai Order" as RecordResult
+  usecase "Thu lai sau PAYMENT_FAILED\n(tao Idempotency-Key moi)" as RetryPayment
+  usecase "Thanh cong: Payment SUCCESS, Order PAID;\ntru diem neu dung, cong diem neu du dieu kien;\nxoa cac dong gio da mua; mo /checkout/success" as PaymentSuccess
+  usecase "That bai: Payment FAILED, Order PAYMENT_FAILED;\ngiu gio, hien loi va cho phep thu lai" as PaymentFailure
+}
+
+Customer --> PlaceOrder
+Customer --> ConfirmPayment
+
+PlaceOrder .> AuthProfile : <<include>>
+PlaceOrder .> ValidateCart : <<include>>
+PlaceOrder .> CalculateAmount : <<include>>
+PlaceOrder .> CheckStock : <<include>>
+PlaceOrder .> SavePending : <<include>>
+PreviewPromotion .> PlaceOrder : <<extend>> [co ma khuyen mai]
+
+ConfirmPayment .> VerifyPayment : <<include>>
+ConfirmPayment .> RecordResult : <<include>>
+RetryPayment .> ConfirmPayment : <<extend>> [Order = PAYMENT_FAILED]
+PaymentSuccess .> RecordResult : <<extend>> [thanh cong]
+PaymentFailure .> RecordResult : <<extend>> [that bai]
+
+note right of ConfirmPayment
+MOMO: QR mo trang xac nhan BrewLite.
+CARD: xac nhan mo phong tren web.
+Khong co nha cung cap that hay webhook.
+Doi diem: 1.000 VND/diem.
+Cong diem: 1 diem/10.000 VND da tra.
+end note
+
+note bottom of CheckStock
+JWT hop le va gio co it nhat mot san pham.
+Ton bi tru khi tao don; hien khong tu hoan
+lai khi thanh toan that bai.
+end note
+@enduml

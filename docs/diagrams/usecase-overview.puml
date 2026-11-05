@@ -1,0 +1,75 @@
+@startuml BrewLite Use Case Overview
+left to right direction
+skinparam shadowing false
+skinparam actorStyle stickman
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F4F7F5
+  BorderColor #315B4A
+  ArrowColor #566B61
+}
+skinparam rectangle {
+  BorderColor #315B4A
+  FontColor #20332B
+}
+title BrewLite - Sơ đồ use case tổng quan
+
+actor "Khách hàng" as Customer
+actor "Nhân viên vận hành\n(STAFF / ADMIN)" as Staff
+actor "Quản trị viên\n(ADMIN)" as Admin
+
+rectangle "Hệ thống đặt hàng BrewLite" {
+  usecase "Xem menu" as Browse
+  usecase "Xem chi tiết sản phẩm\nvà tùy chọn" as Product
+  usecase "Đăng ký / đăng nhập" as Auth
+  usecase "Quản lý giỏ hàng" as Cart
+  usecase "Xem hồ sơ và\nsố dư điểm" as Profile
+  usecase "Xem trước / áp dụng\nmã khuyến mãi" as Promotion
+  usecase "Tạo đơn hàng" as PlaceOrder
+  usecase "Kiểm tra giá, khuyến mãi\nvà tồn nguyên liệu" as ValidateOrder
+  usecase "Thanh toán mô phỏng\n(MOMO / CARD)" as Pay
+  usecase "Xác minh quyền sở hữu,\nsố tiền và idempotency" as VerifyPayment
+  usecase "Xử lý thanh toán\nmô phỏng nội bộ" as ProcessPayment
+  usecase "Ghi nhận kết quả và\ncập nhật trạng thái đơn" as RecordPayment
+  usecase "Đổi điểm thưởng" as RedeemPoints
+  usecase "Cộng điểm sau thanh toán\nthành công (nếu đủ điều kiện)" as AwardPoints
+  usecase "Thử lại thanh toán lỗi" as Retry
+  usecase "Xem lịch sử và\ntrạng thái đơn" as History
+  usecase "Xem đơn và cập nhật\ntrạng thái pha chế" as ManageOrders
+  usecase "Tạo đơn bán tại quầy" as CounterSale
+  usecase "Quản lý sản phẩm và\ntồn nguyên liệu" as ManageCatalogInventory
+  usecase "Quản lý vai trò\nngười dùng" as ManageRoles
+}
+
+Customer --> Browse
+Customer --> Product
+Customer --> Auth
+Customer --> Cart
+Customer --> Profile
+Customer --> PlaceOrder
+Customer --> Pay
+Customer --> History
+
+PlaceOrder .> ValidateOrder : <<include>>
+Promotion .> PlaceOrder : <<extend>> [code entered]
+Pay .> VerifyPayment : <<include>>
+Pay .> ProcessPayment : <<include>>
+Pay .> RecordPayment : <<include>>
+AwardPoints .> RecordPayment : <<extend>> [payment successful]
+RedeemPoints .> Pay : <<extend>> [customer chooses points]
+Retry .> Pay : <<extend>> [previous payment failed]
+
+Staff --> ManageOrders
+Staff --> CounterSale
+Admin --> ManageCatalogInventory
+Admin --> ManageRoles
+
+note right of ProcessPayment
+MOMO và CARD hiện là mô phỏng nội bộ.
+Không gọi nhà cung cấp thanh toán thật.
+end note
+note right of AwardPoints
+Chỉ cộng điểm khi thanh toán thành công;
+mỗi đơn chỉ được cộng một lần.
+end note
+@enduml

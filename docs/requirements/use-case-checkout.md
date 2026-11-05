@@ -7,6 +7,12 @@
 * **Trigger:** Khách hàng nhấn nút "Tiến hành thanh toán" từ màn hình giỏ hàng hoặc nhấn nút "Tiếp tục đến mã QR" / "Xem lại đơn & xác nhận" tại trang `/checkout`.
 * **Mức độ ưu tiên:** Must (Bắt buộc) - Tham chiếu `FR-05`, `FR-06`, `FR-08`.
 
+## Sơ đồ Use Case chi tiết
+
+![Sơ đồ Use Case chi tiết: Đặt hàng và thanh toán](../diagrams/usecase-checkout.svg)
+
+Nguồn chỉnh sửa: [usecase-checkout.puml](../diagrams/usecase-checkout.puml). Sơ đồ mô tả luồng đang triển khai; hủy đơn và tự hết hạn QR chưa có trong luồng checkout hiện tại.
+
 ---
 
 ## 2. Tiền điều kiện (Pre-conditions)
@@ -22,10 +28,10 @@
   2. Bản ghi `Payment` được tạo với `status = SUCCESS`, gắn với `idempotencyKey` tương ứng.
   3. Điểm thưởng sử dụng (nếu có) bị trừ khỏi tài khoản; điểm thưởng tích lũy mới được cộng vào user sau khi đơn chuyển `PAID`.
   4. Các mặt hàng thanh toán thành công được loại bỏ khỏi giỏ hàng phía Frontend.
-  5. Khách hàng được chuyển hướng đến màn hình xác nhận đơn (`/order-success`).
+  5. Khách hàng được chuyển hướng đến màn hình xác nhận đơn (`/checkout/success`).
 * **Thất bại / Hủy:**
-  1. Bản ghi đơn hàng chuyển sang `PAYMENT_FAILED` hoặc bị hủy `CANCELLED`.
-  2. Giỏ hàng của khách hàng **được giữ nguyên vẹn**, không bị xóa để khách có thể thử lại.
+  1. Khi thanh toán thất bại, bản ghi đơn chuyển sang `PAYMENT_FAILED`; hủy đơn không thuộc luồng checkout hiện tại.
+  2. Giỏ hàng của khách hàng được giữ nguyên để có thể thử lại. Lưu ý: tồn nguyên liệu đã bị trừ khi tạo đơn và hiện không tự hoàn lại khi thanh toán thất bại.
 
 ---
 
@@ -34,13 +40,13 @@
 | Bước | Tác nhân (Actor) | Phản hồi của Hệ thống (System) | Mapping FR/NFR |
 | :---: | :--- | :--- | :--- |
 | **1** | Khách hàng mở trang `/checkout`. | Hệ thống kiểm tra JWT. Nếu hợp lệ, tải thông tin điểm thưởng (`fetchMyProfile`), hiển thị danh sách món đã chọn, đơn giá, tổng tạm tính và các lựa chọn thanh toán. | `FR-04`, `NFR-02` |
-| **2** | *(Tùy chọn)* Khách nhập mã khuyến mãi (VD: `GIAM10`) và nhấn "Áp dụng". | Hệ thống gửi `POST /promotions/preview`, kiểm tra điều kiện áp dụng, trả về số tiền được giảm (`discountAmount`) và cập nhật lại tổng tiền thanh toán hiển thị. | Task 10 / Promotion |
+| **2** | *(Tùy chọn)* Khách nhập mã khuyến mãi (VD: `GIAM10`) và nhấn "Áp dụng". | Hệ thống gửi `POST /orders/promotion-preview`, kiểm tra điều kiện áp dụng, trả về số tiền được giảm (`discountAmount`) và cập nhật lại tổng tiền thanh toán hiển thị. | `FR-09` |
 | **3** | *(Tùy chọn)* Khách tick chọn "Dùng điểm cho đơn này" và nhập số điểm muốn đổi. | Hệ thống quy đổi điểm (1 điểm = 1.000đ, tối đa không vượt quá tổng đơn) và tính lại số tiền thanh toán cuối cùng. | Task 10 / Loyalty |
-| **4** | Khách chọn phương thức thanh toán (`MOMO` hoặc `CARD`) và nhấn nút xác nhận đặt hàng. | Hệ thống kiểm tra tính hợp lệ của giỏ hàng, điểm thưởng và mã giảm giá ở Client trước khi gọi API. | `FR-05` |
+| **4** | Khách chọn phương thức thanh toán (`MOMO` hoặc `CARD`) và nhấn nút xác nhận đặt hàng. | Client kiểm tra dữ liệu để phản hồi sớm; server vẫn tự kiểm tra giỏ, mã khuyến mãi, tồn kho và tính lại giá khi tạo đơn. | `FR-05` |
 | **5** | Frontend gửi request `POST /orders` tạo đơn hàng. | Hệ thống tạo bản ghi `Order` với trạng thái ban đầu là `PENDING`, lưu trữ danh sách `OrderItem`, tự tính lại tổng tiền từ Database. | `FR-05`, `AC-05.1` |
-| **6** | Hệ thống chuyển hướng khách hàng sang màn hình xác nhận thanh toán (`/checkout/qr` đối với MOMO hoặc `/checkout/confirm` đối với CARD). | Frontend sinh mã UUID duy nhất gán vào header `Idempotency-Key` và gửi request `POST /payments`. | `FR-06`, `AC-06.1` |
-| **7** | Khách hàng xác nhận thanh toán trên giao diện mô phỏng (hoặc nhận phản hồi callback xác thực). | Backend kiểm tra `Idempotency-Key`, kiểm tra tồn kho, thực thi thanh toán thành công (`SUCCESS`), cập nhật trạng thái đơn hàng từ `PENDING` $\to$ `PAID`. | `FR-06`, `FR-08`, `AC-08.1` |
-| **8** | Hệ thống trả về kết quả thanh toán thành công. | Frontend dọn sạch các món đã mua khỏi giỏ hàng (`clearCart`), chuyển hướng khách sang màn hình thành công hiển thị mã đơn hàng. | `FR-03`, `FR-07` |
+| **6** | Hệ thống chuyển hướng khách hàng sang màn hình xác nhận (`/checkout/qr` đối với MOMO hoặc `/checkout/confirm` đối với CARD). | MOMO hiển thị QR dẫn tới trang xác nhận BrewLite; CARD xác nhận ngay trên web. Khi xác nhận, frontend gửi `POST /payments` với UUID `Idempotency-Key`. | `FR-06`, `AC-06.1` |
+| **7** | Khách hàng xác nhận thanh toán mô phỏng. | Backend kiểm tra quyền sở hữu đơn, trạng thái, số tiền sau khi đổi điểm và `Idempotency-Key`; sau đó ghi `Payment` và chuyển `PENDING` sang `PAID` hoặc `PAYMENT_FAILED`. Không gọi cổng thanh toán hay callback bên ngoài. | `FR-06`, `FR-08`, `AC-08.1` |
+| **8** | Hệ thống trả về kết quả thanh toán thành công. | Backend trừ điểm đã đổi (nếu có) và cộng điểm tích lũy một lần nếu đủ điều kiện. Frontend xóa các dòng giỏ thuộc đơn rồi chuyển đến `/checkout/success` hiển thị mã đơn. | `FR-03`, `FR-07`, `FR-10` |
 
 ---
 
@@ -59,7 +65,7 @@
 
 ### 5.3. Ngoại lệ 3: Mã giảm giá không hợp lệ hoặc hết hạn
 * **Tại Bước 2:** Khách hàng nhập mã không tồn tại, hết hạn hoặc không đủ giá trị đơn tối thiểu (`minOrderTotal`).
-* **Xử lý:** API trả lỗi 4xx. Giao diện hiển thị cảnh báo màu đỏ (`promotionError`). Số tiền tạm tính và tổng thanh toán giữ nguyên giá gốc. Khách hàng vẫn có thể tiếp tục thanh toán mà không dùng mã.
+* **Xử lý:** API trả lỗi 4xx. Giao diện hiển thị cảnh báo màu đỏ (`promotionError`), không áp dụng giảm giá. Khách cần xóa mã không hợp lệ khỏi ô nhập rồi mới tiếp tục thanh toán với giá gốc.
 * **Mapping:** Task 10 Promotion Validation.
 
 ### 5.4. Ngoại lệ 4: Điểm thưởng sử dụng không hợp lệ
@@ -68,17 +74,18 @@
 * **Mapping:** Task 10 Loyalty System.
 
 ### 5.5. Ngoại lệ 5: Hết hàng / Không đủ tồn kho (Out of Stock / Concurrency Conflict)
-* **Tại Bước 5 hoặc 7:** Khi server xử lý tạo đơn/thanh toán, số lượng nguyên liệu trong bảng `Ingredient` không đủ đáp ứng.
-* **Xử lý:** Server từ chối giao dịch, rollback transaction và trả về mã lỗi HTTP `400` hoặc `409 Conflict`. Frontend hiển thị thông báo lỗi chi tiết món hết hàng. Đơn hàng không chuyển sang `PAID`, giỏ hàng được giữ nguyên.
+* **Tại Bước 5:** Khi server tạo đơn, số lượng nguyên liệu trong bảng `Ingredient` không đủ đáp ứng.
+* **Xử lý:** Server từ chối tạo đơn trong transaction và trả lỗi 4xx; frontend hiển thị thông báo lỗi, giỏ hàng được giữ nguyên và không có đơn mới. Kiểm tra tồn kho không diễn ra lần nữa tại bước thanh toán.
 * **Mapping:** `FR-05`, `CV18` (Optimistic locking).
 
 ### 5.6. Ngoại lệ 6: Thanh toán thất bại (Payment Failed)
-* **Tại Bước 7:** Cổng thanh toán trả về lỗi giao dịch hoặc mô phỏng thất bại.
+* **Tại Bước 7:** Giao dịch mô phỏng trả về thất bại.
 * **Xử lý:**
   1. Trạng thái bản ghi `Payment` ghi nhận `FAILED`.
   2. Trạng thái bản ghi `Order` chuyển sang `PAYMENT_FAILED`.
   3. **Frontend giữ nguyên giỏ hàng**, không gọi `clearCart()`.
   4. Hiển thị thông báo: *"Thanh toán thất bại. Vui lòng kiểm tra lại phương thức thanh toán."* kèm nút cho phép đổi sang phương thức khác để thử lại.
+  5. Tồn nguyên liệu đã trừ lúc tạo đơn và không được hoàn tự động trong luồng hiện tại.
 * **Mapping:** `FR-06`, `FR-08` (AC-08.1), `CV19`.
 
 ### 5.7. Ngoại lệ 7: Khách hàng gửi lặp request thanh toán (Replay Request / Network Lag)
@@ -86,19 +93,16 @@
 * **Xử lý:** Nhờ header `Idempotency-Key`, Backend kiểm tra khóa đã tồn tại trong bảng `Payment`. Hệ thống trả về ngay kết quả của lần xử lý trước đó mà không trừ tiền/tạo giao dịch lần 2.
 * **Mapping:** `FR-06` (AC-06.1, AC-06.3), `NFR-02`.
 
-### 5.8. Ngoại lệ 8: Đơn hàng bị hủy (Order Cancelled)
-Trạng thái đơn hàng có thể chuyển thành `CANCELLED` từ trạng thái `PENDING` theo 3 trường hợp:
-1. **Khách hàng chủ động hủy:** Khách hàng nhấn "Hủy giao dịch" trên giao diện chờ thanh toán/quét mã QR. Hệ thống cập nhật trạng thái đơn thành `CANCELLED`.
-2. **Hệ thống tự động hủy do hết hạn (Timeout):** Mã QR thanh toán chỉ có hiệu lực trong khoảng thời gian xác định (ví dụ: 15 phút). Nếu quá thời gian này mà hệ thống chưa nhận được tín hiệu thanh toán thành công, đơn hàng tự động chuyển sang `CANCELLED` để giải phóng tồn kho.
-3. **Nhân viên quầy hủy:** Nhân viên thực hiện thao tác hủy đơn trên trang quản lý (do phát hiện thiếu nguyên liệu pha chế hoặc có yêu cầu trực tiếp từ quầy).
-* **Xử lý phía Frontend:** Hiển thị thông báo đơn hàng đã bị hủy, vô hiệu hóa mã QR và cung cấp nút quay lại thực đơn để đặt đơn mới.
+### 5.8. Ngoài luồng hiện tại: Hủy đơn và hết hạn QR
+State machine có trạng thái `CANCELLED`, nhưng checkout hiện chưa cung cấp thao tác hủy cho khách/nhân viên hoặc job tự động hết hạn QR. Vì vậy các trường hợp này không thuộc luồng được mô tả bởi use case và sơ đồ hiện tại.
 * **Mapping:** `FR-08` (AC-08.1).
 
 ---
 
-## 6. Lưu ý về cơ chế cập nhật trạng thái qua bên thứ ba (VNPay Sandbox / Webhook)
-* Hệ thống tuân thủ nguyên tắc không để Client tự ý chuyển trạng thái đơn sang `PAID`.
-* Khi tích hợp Sandbox, backend sẽ mở endpoint nhận Webhook/IPN (Instant Payment Notification). Chỉ khi có chữ ký hợp lệ và phản hồi thành công từ bên thứ ba (VNPay), đơn hàng mới chính thức chuyển từ `PENDING` sang `PAID`.
+## 6. Phạm vi thanh toán
+* `MOMO` và `CARD` hiện là lựa chọn mô phỏng nội bộ. QR dẫn tới trang xác nhận của BrewLite; hệ thống không chuyển tiền thật, không gọi nhà cung cấp thanh toán và không nhận webhook/IPN.
+* Client không tự đặt trạng thái `PAID`; backend ghi nhận kết quả mô phỏng và cập nhật trạng thái đơn trong transaction.
+* Tích hợp nhà cung cấp thật và xác thực webhook/IPN là hướng mở rộng, không thuộc use case hiện hành.
 
 ---
 
@@ -111,4 +115,4 @@ Trạng thái đơn hàng có thể chuyển thành `CANCELLED` từ trạng th�
 | **FR-05** | Tạo đơn hàng | Gửi payload tạo đơn `POST /orders`, server tính lại toàn bộ tiền độc lập từ CSDL và lưu trạng thái ban đầu `PENDING`. |
 | **FR-06** | Mô phỏng thanh toán | Gửi `Idempotency-Key` UUID, chọn phương thức MOMO/CARD, xử lý mô phỏng kết quả thành công/thất bại. |
 | **FR-07** | Xem lịch sử đơn hàng | Sau khi thanh toán hoàn tất, đơn hàng xuất hiện trong danh sách đơn của người dùng (`GET /orders/me`). |
-| **FR-08** | Quản lý trạng thái đơn hàng | Quản lý chuyển đổi trạng thái nghiêm ngặt: `PENDING` $\to$ `PAID` (thành công), `PENDING` $\to$ `PAYMENT_FAILED` (thất bại), hoặc `PENDING` $\to$ `CANCELLED` (3 trường hợp hủy). |
+| **FR-08** | Quản lý trạng thái đơn hàng | Checkout chuyển `PENDING` $\to$ `PAID` khi mô phỏng thành công hoặc `PENDING` $\to$ `PAYMENT_FAILED` khi mô phỏng thất bại; retry đưa đơn về `PENDING` trước lần thanh toán mới. Hủy là transition của state machine nhưng chưa có thao tác trong checkout. |
