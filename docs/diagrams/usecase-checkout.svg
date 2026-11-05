@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1520" style="width: 100%; height: auto; max-width: 1700px" role="img" aria-labelledby="title desc">
+  <title id="title">BrewLite - Use Case chi tiết: Đặt hàng và thanh toán</title>
+  <desc id="desc">Sơ đồ use case checkout dựa trên luồng đang triển khai: tạo đơn PENDING, kiểm tra tồn, thanh toán MOMO QR hoặc CARD mô phỏng, xử lý thành công, thất bại và retry.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52685d"/></marker>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #24352e; }
+      .title { font-size: 30px; font-weight: 700; }
+      .boundary-label { font-size: 20px; font-weight: 700; }
+      .actor-label { font-size: 16px; font-weight: 600; text-anchor: middle; }
+      .usecase { fill: #f4f7f5; stroke: #315b4a; stroke-width: 2; }
+      .success { fill: #edf7f0; stroke: #3c7952; stroke-width: 2; }
+      .failure { fill: #fff1ef; stroke: #a64e46; stroke-width: 2; }
+      .uc-label { font-size: 15px; text-anchor: middle; }
+      .association { fill: none; stroke: #52685d; stroke-width: 1.8; }
+      .include, .extend { fill: none; stroke: #52685d; stroke-width: 1.7; stroke-dasharray: 8 6; marker-end: url(#arrow); }
+      .relation-label { font-size: 13px; fill: #53665b; paint-order: stroke; stroke: #fbfcfa; stroke-width: 4px; stroke-linejoin: round; }
+      .note { fill: #fff7df; stroke: #b7892c; stroke-width: 1.5; }
+      .note-text { font-size: 14px; }
+    </style>
+  </defs>
+  <rect width="1700" height="1520" fill="#ffffff"/>
+  <text class="title" x="850" y="52" text-anchor="middle">BrewLite - Use Case chi tiết: Đặt hàng và thanh toán</text>
+  <rect x="250" y="100" width="1390" height="1360" rx="8" fill="#fbfcfa" stroke="#315b4a" stroke-width="2.5"/>
+  <text class="boundary-label" x="945" y="137" text-anchor="middle">BrewLite Web + API</text>
+
+  <g class="association">
+    <path d="M 175 700 L 385 260"/>
+    <path d="M 175 700 L 365 800"/>
+  </g>
+  <g class="include">
+    <path d="M 735 250 L 865 190"/>
+    <path d="M 735 250 L 865 300"/>
+    <path d="M 735 250 L 865 410"/>
+    <path d="M 735 250 L 865 520"/>
+    <path d="M 735 250 L 865 630"/>
+    <path d="M 755 800 L 865 740"/>
+    <path d="M 755 800 L 865 870"/>
+  </g>
+  <g class="extend">
+    <path d="M 560 357 L 560 300"/>
+    <path d="M 560 940 L 560 850"/>
+    <path d="M 790 1130 L 900 915"/>
+    <path d="M 1120 1060 L 1120 915"/>
+  </g>
+
+  <text class="relation-label" x="755" y="213">&lt;&lt;include&gt;&gt;</text>
+  <text class="relation-label" x="770" y="276">&lt;&lt;include&gt;&gt;</text>
+  <text class="relation-label" x="775" y="350">&lt;&lt;include&gt;&gt;</text>
+  <text class="relation-label" x="790" y="455">&lt;&lt;include&gt;&gt;</text>
+  <text class="relation-label" x="805" y="560">&lt;&lt;include&gt;&gt;</text>
+  <text class="relation-label" x="770" y="765">&lt;&lt;include&gt;&gt;</text>
+  <text class="relation-label" x="770" y="845">&lt;&lt;include&gt;&gt;</text>
+  <text class="relation-label" x="575" y="335">&lt;&lt;extend&gt;&gt; [có mã]</text>
+  <text class="relation-label" x="575" y="900">&lt;&lt;extend&gt;&gt; [thử lại]</text>
+  <text class="relation-label" x="790" y="1035">&lt;&lt;extend&gt;&gt; [thành công]</text>
+  <text class="relation-label" x="1135" y="1000">&lt;&lt;extend&gt;&gt; [thất bại]</text>
+
+  <g>
+    <ellipse class="usecase" cx="560" cy="250" rx="175" ry="48"/>
+    <text class="uc-label" x="560" y="244"><tspan x="560">Đặt hàng từ giỏ</tspan><tspan x="560" dy="20">POST /orders</tspan></text>
+
+    <ellipse class="usecase" cx="1050" cy="190" rx="185" ry="40"/>
+    <text class="uc-label" x="1050" y="185"><tspan x="1050">Xác thực JWT, tải hồ sơ</tspan><tspan x="1050" dy="19">và số dư điểm</tspan></text>
+    <ellipse class="usecase" cx="1050" cy="300" rx="185" ry="40"/>
+    <text class="uc-label" x="1050" y="295"><tspan x="1050">Kiểm tra giỏ, sản phẩm,</tspan><tspan x="1050" dy="19">size và topping</tspan></text>
+    <ellipse class="usecase" cx="1050" cy="410" rx="185" ry="40"/>
+    <text class="uc-label" x="1050" y="405"><tspan x="1050">Tính giá và xác nhận</tspan><tspan x="1050" dy="19">khuyến mãi phía server</tspan></text>
+    <ellipse class="usecase" cx="1050" cy="520" rx="185" ry="40"/>
+    <text class="uc-label" x="1050" y="515"><tspan x="1050">Kiểm tra và trừ tồn</tspan><tspan x="1050" dy="19">nguyên liệu trong transaction</tspan></text>
+    <ellipse class="usecase" cx="1050" cy="630" rx="185" ry="40"/>
+    <text class="uc-label" x="1050" y="625"><tspan x="1050">Tạo Order / OrderItem</tspan><tspan x="1050" dy="19">status = PENDING</tspan></text>
+    <ellipse class="usecase" cx="560" cy="400" rx="175" ry="43"/>
+    <text class="uc-label" x="560" y="405">Xem trước mã khuyến mãi</text>
+
+    <ellipse class="usecase" cx="560" cy="800" rx="195" ry="50"/>
+    <text class="uc-label" x="560" y="794"><tspan x="560">Xác nhận thanh toán mô phỏng</tspan><tspan x="560" dy="20">POST /payments</tspan></text>
+    <ellipse class="usecase" cx="1050" cy="740" rx="185" ry="42"/>
+    <text class="uc-label" x="1050" y="735"><tspan x="1050">Xác minh chủ đơn, trạng thái,</tspan><tspan x="1050" dy="19">số tiền, điểm, idempotency</tspan></text>
+    <ellipse class="usecase" cx="1050" cy="870" rx="185" ry="42"/>
+    <text class="uc-label" x="1050" y="865"><tspan x="1050">Ghi Payment và chuyển</tspan><tspan x="1050" dy="19">trạng thái Order</tspan></text>
+    <ellipse class="usecase" cx="560" cy="985" rx="175" ry="45"/>
+    <text class="uc-label" x="560" y="980"><tspan x="560">Thử lại khi PAYMENT_FAILED</tspan><tspan x="560" dy="19">dùng Idempotency-Key mới</tspan></text>
+
+    <ellipse class="success" cx="560" cy="1130" rx="230" ry="70"/>
+    <text class="uc-label" x="560" y="1100"><tspan x="560">Thành công: Payment SUCCESS, Order PAID</tspan><tspan x="560" dy="19">trừ điểm nếu dùng; cộng điểm nếu đủ điều kiện</tspan><tspan x="560" dy="19">xóa các dòng giỏ đã mua; mở /checkout/success</tspan></text>
+    <ellipse class="failure" cx="1120" cy="1130" rx="230" ry="70"/>
+    <text class="uc-label" x="1120" y="1110"><tspan x="1120">Thất bại: Payment FAILED,</tspan><tspan x="1120" dy="19">Order PAYMENT_FAILED; giữ giỏ</tspan><tspan x="1120" dy="19">hiện lỗi và cho phép thử lại</tspan></text>
+  </g>
+
+  <g class="actors" stroke="#24352e" stroke-width="2.2" fill="none" stroke-linecap="round">
+    <circle cx="145" cy="645" r="14"/><path d="M145 659 L145 702 M121 674 L169 674 M145 702 L123 730 M145 702 L167 730"/>
+  </g>
+  <text class="actor-label" x="145" y="760"><tspan x="145">Khách hàng</tspan><tspan x="145" dy="19">CUSTOMER</tspan></text>
+
+  <rect class="note" x="285" y="1260" width="620" height="150" rx="4"/>
+  <text class="note-text" x="305" y="1290"><tspan x="305">Tiền điều kiện: JWT hợp lệ, giỏ có sản phẩm.</tspan><tspan x="305" dy="21">Chưa đăng nhập thì chuyển /login; giỏ rỗng hoặc</tspan><tspan x="305" dy="21">thiếu nguyên liệu thì từ chối tạo đơn.</tspan><tspan x="305" dy="21">Điểm đổi: 1.000 VND/điểm; thưởng 1 điểm/10.000 VND.</tspan></text>
+  <rect class="note" x="940" y="1260" width="650" height="150" rx="4"/>
+  <text class="note-text" x="960" y="1290"><tspan x="960">MOMO QR mở trang xác nhận BrewLite; CARD xác nhận trên web.</tspan><tspan x="960" dy="21">Không có cổng thật hoặc webhook. Tồn bị trừ khi tạo đơn</tspan><tspan x="960" dy="21">và hiện không tự hoàn lại khi thanh toán thất bại.</tspan><tspan x="960" dy="21">Hủy đơn / tự hết hạn QR chưa được triển khai.</tspan></text>
+</svg>
