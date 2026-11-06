@@ -210,7 +210,7 @@ Order creation rejects an empty item list;
 end note
 
 note bottom of Payment
-Payment.method is String in Prisma (currently MOMO / CARD),
+Payment.method is String in Prisma (VNPay online; CASH/CARD counter sale),
 not a persisted enum.
 end note
 @enduml

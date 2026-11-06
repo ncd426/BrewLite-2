@@ -103,12 +103,13 @@ WHERE schemaname='public' AND tablename='Payment'
 ## What still needs backend implementation?
 
 The uploaded `ProductsService` returns a hard-coded in-memory menu;
-`UsersService` stores users in a Map. The payments API now reads the order
-total from Prisma, records each result in `Payment`, and transactionally updates
-the authenticated owner's order to `PAID` or `PAYMENT_FAILED`. Its
-`simulateFailure` request flag exercises the failed-payment path. The generated
-`idempotencyKey` is unique per recorded attempt; replaying the same client
-request with the original result is not implemented.
+`UsersService` stores users in a Map. Customer payments create expiring
+VNPay provider sessions. The API updates an order to `PAID` or
+`PAYMENT_FAILED` only after a provider callback passes signature, reference, and
+amount checks. The browser return URL does not settle a payment. Pending QR
+payments expire after the configured TTL and are canceled by the API expiry
+sweeper. The unique `idempotencyKey` protects retries, and a partial unique
+index permits at most one pending payment per order.
 
 ## Security note
 

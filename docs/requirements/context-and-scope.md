@@ -19,7 +19,7 @@ Tại các quầy cà phê truyền thống, vào các khung giờ cao điểm t
 | **Quản trị viên / Quản lý (Admin)** | Quản lý danh mục món, nguyên liệu, chương trình khuyến mãi. | Kiểm soát tồn kho chính xác, quản trị giá bán và mã ưu đãi chặt chẽ, không bị thất thoát doanh thu. |
 | **Giảng viên / Hội đồng đánh giá** | Đánh giá kiến trúc kỹ thuật và tính tuân thủ quy trình Agile/Scrum. | Source code rõ ràng, tuân thủ nguyên tắc thiết kế, xử lý toàn vẹn dữ liệu (idempotency, transaction, concurrency), tài liệu SRS/Use Case khớp code. |
 | **Nhóm phát triển (Dev Team)** | Thiết kế, lập trình Fullstack (Next.js + NestJS + PostgreSQL). | Kiến trúc phân tầng module hóa, hợp đồng API rõ ràng giữa Frontend - Backend, kiểm thử tự động đạt tiêu chuẩn. |
-| **Cổng thanh toán mô phỏng (Mock Payment)** | Giả lập đối tác cung cấp dịch vụ thanh toán (MOMO / CARD). | Phản hồi đúng hợp đồng giao tiếp, hỗ trợ Idempotency-Key và mô phỏng được cả ca thành công lẫn thất bại phục vụ kiểm thử. |
+| **Cổng thanh toán sandbox** | Tạo phiên VNPay có thời hạn, hỗ trợ idempotency và chỉ chốt đơn qua IPN đã xác thực. | QR tự hết hạn; client/browser return không thể tự xác nhận thanh toán. |
 
 ---
 
@@ -40,14 +40,14 @@ Tại các quầy cà phê truyền thống, vào các khung giờ cao điểm t
 - **Quản lý giỏ hàng:** Lưu trữ LocalStorage qua Zustand persist middleware, tạo khóa `itemKey` phân tách chính xác món theo cấu hình size và topping.
 - **Xác thực người dùng:** Đăng ký, đăng nhập cấp JWT Access Token, bảo vệ route checkout và orders.
 - **Tạo đơn & Khuyến mãi:** Áp dụng mã giảm giá (FIXED / PERCENT) và đổi điểm thưởng tích lũy (Loyalty Points: 1 điểm = 1.000đ).
-- **Mô phỏng thanh toán:** Hỗ trợ cổng giả lập MOMO (quét mã QR) và CARD, sinh `idempotencyKey` UUID cho mỗi lượt thanh toán.
+- **Sandbox thanh toán:** VNPay tạo phiên QR có thời hạn; chỉ callback server-to-server đã xác thực mới cập nhật trạng thái đơn.
 - **Vòng đời đơn hàng (State Machine):** Chuyển dịch trạng thái chuẩn: `PENDING` $\to$ `PAID` $\to$ `PREPARING` $\to$ `READY` $\to$ `COMPLETED` (hoặc `PAYMENT_FAILED` / `CANCELLED`).
 - **Lịch sử đơn hàng:** Tra cứu danh sách và chi tiết các đơn thuộc chính tài khoản đăng nhập (`GET /orders/me`).
 - **Triển khai tự động:** Đóng gói toàn bộ hệ thống bằng Docker Compose (`PostgreSQL`, `API NestJS`, `Web Next.js`).
 
 ### 4.2. Ngoài phạm vi (Out-of-scope & Kế hoạch mở rộng)
 - **Thu tiền thực tế:** Kết nối mạng lưới ngân hàng thật và cổng trung gian thanh toán thực tế (chưa đối soát tiền thật ngoài đời thực).
-- **Tích hợp VNPay Sandbox (Giai đoạn mở rộng):** Phiên bản hiện tại tập trung kiểm thử mô phỏng nội bộ (Mock Payment). Việc kết nối cổng VNPay Sandbox và cơ chế xử lý phản hồi xác nhận qua IPN/Webhook từ bên thứ ba sẽ được triển khai sau khi hoàn tất các task nền tảng.
+- **Thu tiền thực tế:** Sandbox là môi trường kiểm thử; đối soát giao dịch, hoàn tiền và xử lý tranh chấp với giao dịch tiền thật vẫn ngoài phạm vi.
 - **Vận chuyển:** Tính năng giao hàng tận nơi (chưa tích hợp định vị tài xế, tính cước vận chuyển theo khoảng cách GPS; mặc định phí vận chuyển = 0đ).
 - **Nền tảng khác:** Ứng dụng di động độc lập (Native Mobile App Android/iOS).
 - **Quy mô:** Quản lý phân chuỗi nhiều chi nhánh cửa hàng.

@@ -45,9 +45,9 @@ PaymentSuccess .> RecordResult : <<extend>> [thanh cong]
 PaymentFailure .> RecordResult : <<extend>> [that bai]
 
 note right of ConfirmPayment
-MOMO: QR mo trang xac nhan BrewLite.
-CARD: xac nhan mo phong tren web.
-Khong co nha cung cap that hay webhook.
+VNPay Sandbox: thanh toan qua QR cua nha cung cap.
+Chi IPN co chu ky hop le moi cap nhat trang thai don.
+Browser return khong tu xac nhan thanh toan.
 Doi diem: 1.000 VND/diem.
 Cong diem: 1 diem/10.000 VND da tra.
 end note

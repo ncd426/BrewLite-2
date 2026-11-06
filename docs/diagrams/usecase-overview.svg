@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1900 1460" style="width: 100%; height: auto; max-width: 1900px" role="img" aria-labelledby="title desc">
   <title id="title">BrewLite - Sơ đồ use case tổng quan</title>
-  <desc id="desc">Sơ đồ use case cho khách hàng, nhân viên vận hành và quản trị viên; bao gồm đặt hàng, khuyến mãi, điểm thưởng, thanh toán mô phỏng, tồn kho và vận hành đơn hàng.</desc>
+  <desc id="desc">Sơ đồ use case cho khách hàng, nhân viên vận hành và quản trị viên; bao gồm đặt hàng, khuyến mãi, điểm thưởng, thanh toán VNPay Sandbox, tồn kho và vận hành đơn hàng.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52685d"/></marker>
     <marker id="triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M 1 1 L 11 6 L 1 11" fill="none" stroke="#52685d" stroke-width="1.5"/></marker>
@@ -71,9 +71,9 @@
     <ellipse class="usecase" cx="570" cy="900" rx="180" ry="38"/><text class="uc-label" x="570" y="895"><tspan x="570">Xem lịch sử và</tspan><tspan x="570" dy="20">trạng thái đơn</tspan></text>
     <ellipse class="usecase" cx="570" cy="1020" rx="180" ry="38"/><text class="uc-label" x="570" y="1015"><tspan x="570">Xem hồ sơ và</tspan><tspan x="570" dy="20">số dư điểm</tspan></text>
 
-    <ellipse class="usecase" cx="1010" cy="260" rx="180" ry="38"/><text class="uc-label" x="1010" y="255"><tspan x="1010">Thanh toán mô phỏng</tspan><tspan x="1010" dy="20">(MOMO / CARD)</tspan></text>
+    <ellipse class="usecase" cx="1010" cy="260" rx="180" ry="38"/><text class="uc-label" x="1010" y="255"><tspan x="1010">Thanh toán VNPay</tspan><tspan x="1010" dy="20">(Sandbox)</tspan></text>
     <ellipse class="usecase" cx="1010" cy="380" rx="180" ry="38"/><text class="uc-label" x="1010" y="375"><tspan x="1010">Xác minh quyền sở hữu,</tspan><tspan x="1010" dy="20">số tiền và idempotency</tspan></text>
-    <ellipse class="usecase" cx="1010" cy="510" rx="180" ry="38"/><text class="uc-label" x="1010" y="505"><tspan x="1010">Xử lý thanh toán</tspan><tspan x="1010" dy="20">mô phỏng nội bộ</tspan></text>
+    <ellipse class="usecase" cx="1010" cy="510" rx="180" ry="38"/><text class="uc-label" x="1010" y="505"><tspan x="1010">Tạo phiên thanh toán</tspan><tspan x="1010" dy="20">VNPay Sandbox</tspan></text>
     <ellipse class="usecase" cx="1010" cy="640" rx="180" ry="38"/><text class="uc-label" x="1010" y="635"><tspan x="1010">Ghi nhận kết quả và</tspan><tspan x="1010" dy="20">cập nhật trạng thái đơn</tspan></text>
     <ellipse class="usecase" cx="1010" cy="770" rx="180" ry="38"/><text class="uc-label" x="1010" y="765"><tspan x="1010">Kiểm tra giá, khuyến mãi</tspan><tspan x="1010" dy="20">và tồn nguyên liệu</tspan></text>
     <ellipse class="usecase" cx="1010" cy="900" rx="180" ry="38"/><text class="uc-label" x="1010" y="906">Đổi điểm thưởng</text>
@@ -95,7 +95,7 @@
   <text class="actor-label" x="150" y="1225"><tspan x="150">Nhân viên vận hành</tspan><tspan x="150" dy="20">(STAFF / ADMIN)</tspan></text>
   <text class="actor-label" x="1750" y="1225"><tspan x="1750">Quản trị viên</tspan><tspan x="1750" dy="20">(ADMIN)</tspan></text>
 
-  <rect class="note" x="1210" y="330" width="330" height="72" rx="4"/><text class="note-text" x="1225" y="357"><tspan x="1225">Thanh toán là mô phỏng nội bộ;</tspan><tspan x="1225" dy="20">không kết nối nhà cung cấp thật.</tspan></text>
+  <rect class="note" x="1210" y="330" width="330" height="72" rx="4"/><text class="note-text" x="1225" y="357"><tspan x="1225">Thanh toán qua VNPay Sandbox;</tspan><tspan x="1225" dy="20">đơn chờ IPN xác thực.</tspan></text>
   <rect class="note" x="1210" y="900" width="330" height="70" rx="4"/><text class="note-text" x="1225" y="927"><tspan x="1225">Điểm chỉ cộng sau khi PAID;</tspan><tspan x="1225" dy="20">mỗi đơn cộng tối đa một lần.</tspan></text>
   <text x="300" y="1325" font-size="14" fill="#617168">Đường nét đứt: &lt;&lt;include&gt;&gt; / &lt;&lt;extend&gt;&gt; (mũi tên chỉ quan hệ đích)</text>
 </svg>
