@@ -68,6 +68,6 @@ export class CreateCounterSaleDto {
   @Type(() => CreateOrderItemDto)
   items!: CreateOrderItemDto[];
 
-  @IsIn(['MOMO', 'CARD'])
-  method!: 'MOMO' | 'CARD';
+  @IsIn(['CASH', 'CARD'])
+  method!: 'CASH' | 'CARD';
 }

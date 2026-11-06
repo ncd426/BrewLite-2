@@ -9,7 +9,7 @@ import {
   LOYALTY_REDEMPTION_VND,
   processPayment,
   type OrderHistoryItem,
-  type PaymentMethod,
+  type CheckoutPaymentMethod,
 } from '@/lib/api';
 import { useCartStore } from '@/lib/useCartStore';
 
@@ -32,9 +32,9 @@ function ConfirmContent() {
   const removeItems = useCartStore((state) => state.removeItems);
   const orderId = parseOrderId(query.get('orderId'));
   const points = parsePoints(query.get('points'));
-  const method: PaymentMethod | null = query.get('method') === 'MOMO'
-    ? 'MOMO'
-    : query.get('method') === 'CARD' ? 'CARD' : null;
+  const method: CheckoutPaymentMethod | null = query.get('method') === 'VNPAY'
+    ? 'VNPAY'
+    : null;
   const [order, setOrder] = useState<OrderHistoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -99,8 +99,10 @@ function ConfirmContent() {
       if (result.status === 'PAID') {
         removePurchasedItems();
         router.replace(`/checkout/success?orderId=${orderId}` as any);
+      } else if (result.checkoutUrl) {
+        window.location.assign(result.checkoutUrl);
       } else {
-        setError(result.message || 'Giao dịch mô phỏng không thành công.');
+        setError('Không thể tạo phiên thanh toán từ nhà cung cấp.');
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể xác nhận giao dịch.');
@@ -126,12 +128,11 @@ function ConfirmContent() {
         <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">BrewLite • Chế độ thử nghiệm</p>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">Xác nhận thanh toán</h1>
         <p className="mt-2 text-sm text-gray-500">
-          {method === 'MOMO' ? 'Ví điện tử • QR xác nhận' : 'Thẻ ngân hàng / thẻ quốc tế • Mô phỏng'}
+          VNPay Sandbox
         </p>
         <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-          <strong>Chỉ là thanh toán mô phỏng:</strong> Bấm xác nhận sẽ đánh dấu đơn là PAID trong
-          BrewLite. Không có chuyển tiền thật, không có xác thực từ MoMo/VNPay/ZaloPay hay ngân hàng.
-          Không nhập số thẻ hoặc mã CVV trên trang này.
+          Trạng thái đơn chỉ được cập nhật sau callback đã xác thực từ nhà cung cấp thanh toán.
+          Không nhập thông tin thẻ trên BrewLite.
         </div>
 
         {needsLogin && (
@@ -188,7 +189,7 @@ function ConfirmContent() {
                 disabled={paying || invalidPoints || !method}
                 className="w-full rounded-xl bg-amber-600 py-3 font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
               >
-                {paying ? 'Đang xác nhận...' : 'Xác nhận thanh toán (mô phỏng)'}
+                {paying ? 'Đang kết nối...' : 'Mở cổng thanh toán'}
               </button>
             ) : (
               <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">Đơn không ở trạng thái có thể thanh toán.</p>
@@ -198,9 +199,7 @@ function ConfirmContent() {
         )}
       </div>
       <p className="mt-4 text-center text-xs text-gray-500">
-        {method === 'CARD'
-          ? 'Bản thực tế nên chuyển sang cổng thanh toán của ngân hàng / nhà cung cấp, không nhập thông tin thẻ tại BrewLite.'
-          : 'Quét QR chỉ mở trang xác nhận; việc quét không phải bằng chứng chuyển tiền.'}
+        'Chỉ phản hồi IPN có chữ ký hợp lệ mới xác nhận thanh toán; chuyển hướng trình duyệt không đủ.'
       </p>
     </main>
   );

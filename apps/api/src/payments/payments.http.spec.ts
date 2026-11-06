@@ -29,6 +29,9 @@ type MockPayment = {
   method: string;
   status: PaymentStatus;
   idempotencyKey: string;
+  providerReference: string | null;
+  checkoutUrl: string | null;
+  expiresAt: Date | null;
   createdAt: Date;
 };
 
@@ -82,6 +85,11 @@ describe('POST /payments', () => {
         }) =>
           payments.get(args.where.idempotencyKey) ?? null,
       ),
+      findFirst: jest.fn(async (args: { where: { orderId: number; status: PaymentStatus } }) =>
+        [...payments.values()].find((payment) =>
+          payment.orderId === args.where.orderId && payment.status === args.where.status,
+        ) ?? null,
+      ),
 
       create: jest.fn(
         async (args: {
@@ -91,11 +99,14 @@ describe('POST /payments', () => {
             method: string;
             status: PaymentStatus;
             idempotencyKey: string;
+            expiresAt: Date;
           };
         }) => {
           const payment: MockPayment = {
             id: nextPaymentId++,
             ...args.data,
+            providerReference: null,
+            checkoutUrl: null,
             createdAt: new Date(),
           };
 
@@ -107,7 +118,7 @@ describe('POST /payments', () => {
       update: jest.fn(
         async (args: {
           where: { id: number };
-          data: { status: PaymentStatus };
+          data: Partial<Pick<MockPayment, 'status' | 'providerReference' | 'checkoutUrl' | 'expiresAt'>>;
         }) => {
           const payment = [...payments.values()].find(
             (p) => p.id === args.where.id,
@@ -119,7 +130,7 @@ describe('POST /payments', () => {
 
           const updated = {
             ...payment,
-            status: args.data.status,
+            ...args.data,
           };
 
           payments.set(updated.idempotencyKey, updated);
@@ -153,10 +164,15 @@ describe('POST /payments', () => {
 
     payment: {
       findUnique: tx.payment.findUnique,
+      findMany: jest.fn(async () => []),
+      update: tx.payment.update,
     },
   };
 
   beforeAll(async () => {
+    process.env.VNPAY_TMN_CODE = 'TESTCODE';
+    process.env.VNPAY_HASH_SECRET = 'sandbox-secret';
+
     const moduleRef = await Test.createTestingModule({
       controllers: [PaymentsController],
       providers: [
@@ -211,13 +227,13 @@ describe('POST /payments', () => {
     await app.close();
   });
 
-  it('persists a successful payment and marks the order PAID', async () => {
+  it('creates a pending payment without marking the order paid', async () => {
     const response = await request(app.getHttpServer())
       .post('/payments')
       .set('Idempotency-Key', 'test-success-001')
       .send({
         orderId: 42,
-        method: 'MOMO',
+        method: 'VNPAY',
       })
       .expect(201);
 
@@ -225,23 +241,23 @@ describe('POST /payments', () => {
       id: 9,
       orderId: 42,
       amount: 94000,
-      method: 'MOMO',
-      status: 'PAID',
-      paymentStatus: 'SUCCESS',
+      method: 'VNPAY',
+      status: 'PENDING',
+      paymentStatus: 'PENDING',
     });
 
-    expect(order?.status).toBe(OrderStatus.PAID);
+    expect(order?.status).toBe(OrderStatus.PENDING);
     expect(payments.size).toBe(1);
-    expect(tx.order.updateMany).toHaveBeenCalled();
+    expect(tx.order.updateMany).not.toHaveBeenCalled();
   });
 
-  it('persists a failed payment and marks the order PAYMENT_FAILED', async () => {
+  it('does not let a client simulation flag settle a payment', async () => {
     const response = await request(app.getHttpServer())
       .post('/payments')
       .set('Idempotency-Key', 'test-payment-failed-001')
       .send({
         orderId: 42,
-        method: 'CARD',
+        method: 'VNPAY',
         simulateFailure: true,
       })
       .expect(201);
@@ -249,14 +265,12 @@ describe('POST /payments', () => {
     expect(response.body).toMatchObject({
       orderId: 42,
       amount: 94000,
-      method: 'CARD',
-      status: 'PAYMENT_FAILED',
-      paymentStatus: 'FAILED',
+      method: 'VNPAY',
+      status: 'PENDING',
+      paymentStatus: 'PENDING',
     });
 
-    expect(order?.status).toBe(
-      OrderStatus.PAYMENT_FAILED,
-    );
+    expect(order?.status).toBe(OrderStatus.PENDING);
 
     expect(payments.size).toBe(1);
   });
@@ -271,7 +285,7 @@ describe('POST /payments', () => {
       .set('Idempotency-Key', 'test-order-not-found-001')
       .send({
         orderId: 42,
-        method: 'CARD',
+        method: 'VNPAY',
       })
       .expect(404);
 
@@ -290,7 +304,7 @@ describe('POST /payments', () => {
       .set('Idempotency-Key', 'test-order-completed-001')
       .send({
         orderId: 42,
-        method: 'CARD',
+        method: 'VNPAY',
       })
       .expect(409);
 
@@ -306,7 +320,7 @@ describe('POST /payments', () => {
     const invalidRequests = [
       { orderId: 0, method: 'MOMO' },
       { orderId: 42, method: 'CASH' },
-      { orderId: 'abc', method: 'CARD' },
+      { orderId: 'abc', method: 'VNPAY' },
       { method: 'MOMO' },
     ];
 

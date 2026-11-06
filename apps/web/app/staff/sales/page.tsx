@@ -39,7 +39,7 @@ function SalesContent() {
   const [cart, setCart] = useState<Line[]>([]);
   const [size, setSize] = useState<Size>('M');
   const [toppings, setToppings] = useState<string[]>([]);
-  const [method, setMethod] = useState<PaymentMethod>('MOMO');
+  const [method, setMethod] = useState<PaymentMethod>('CASH');
   const [selling, setSelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<CounterSaleResponse | null>(null);
@@ -199,7 +199,7 @@ function SalesContent() {
             </div>
             <fieldset className="mt-5 space-y-2">
               <legend className="text-sm font-semibold text-slate-900">Xác nhận thanh toán (mô phỏng)</legend>
-              <label className="flex items-center gap-2 text-sm"><input type="radio" checked={method === 'MOMO'} onChange={() => { setMethod('MOMO'); saleKey.current = null; }}/>Ví / QR</label>
+              <label className="flex items-center gap-2 text-sm"><input type="radio" checked={method === 'CASH'} onChange={() => { setMethod('CASH'); saleKey.current = null; }}/>Tiền mặt</label>
               <label className="flex items-center gap-2 text-sm"><input type="radio" checked={method === 'CARD'} onChange={() => { setMethod('CARD'); saleKey.current = null; }}/>Thẻ</label>
             </fieldset>
             {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}

@@ -1,4 +1,5 @@
 
+import { createHmac } from 'node:crypto';
 import { jest } from '@jest/globals';
 import {
   BadRequestException,
@@ -18,6 +19,7 @@ type TestOrder = {
   userId: number;
   total: number;
   status: OrderStatus;
+  loyaltyAwardedAt: Date | null;
 };
 
 describe('PaymentsService State Machine integration', () => {
@@ -33,14 +35,14 @@ describe('PaymentsService State Machine integration', () => {
 
   const updateOrder = jest.fn<
     (args: {
-      where: { id: number; status: OrderStatus };
-      data: { status: OrderStatus };
+      where: { id: number; status: OrderStatus; loyaltyAwardedAt?: Date | null };
+      data: { status?: OrderStatus; loyaltyAwardedAt?: Date };
     }) => Promise<{ count: number }>
   >();
 
   const findPayment = jest.fn<
     (args: {
-      where: { idempotencyKey: string };
+      where: { id?: number; idempotencyKey?: string; providerReference?: string };
     }) => Promise<Payment | null>
   >();
 
@@ -49,7 +51,7 @@ describe('PaymentsService State Machine integration', () => {
       data: Pick<
         Payment,
         'orderId' | 'amount' | 'method' |
-        'idempotencyKey' | 'status'
+        'idempotencyKey' | 'status' | 'expiresAt'
       >;
     }) => Promise<Payment>
   >();
@@ -57,7 +59,7 @@ describe('PaymentsService State Machine integration', () => {
   const updatePayment = jest.fn<
     (args: {
       where: { id: number };
-      data: { status: PaymentStatus };
+      data: Partial<Pick<Payment, 'status' | 'providerReference' | 'checkoutUrl' | 'expiresAt'>>;
     }) => Promise<Payment>
   >();
 
@@ -68,8 +70,27 @@ describe('PaymentsService State Machine integration', () => {
     },
     payment: {
       findUnique: findPayment,
+      findFirst: jest.fn(async ({ where }: { where: { orderId: number; status: PaymentStatus } }) =>
+        [...payments.values()].find((payment) =>
+          payment.orderId === where.orderId && payment.status === where.status,
+        ) ?? null,
+      ),
       create: createPayment,
       update: updatePayment,
+      updateMany: jest.fn(async (args: {
+        where: { id: number; status: PaymentStatus };
+        data: { status: PaymentStatus };
+      }) => {
+        const payment = [...payments.values()].find((item) => item.id === args.where.id);
+        if (!payment || payment.status !== args.where.status) return { count: 0 };
+        const updated = { ...payment, status: args.data.status };
+        payments.set(updated.idempotencyKey, updated);
+        return { count: 1 };
+      }),
+    },
+    user: {
+      updateMany: jest.fn(async () => ({ count: 1 })),
+      update: jest.fn(async () => ({})),
     },
   };
 
@@ -79,9 +100,23 @@ describe('PaymentsService State Machine integration', () => {
     ) => Promise<unknown>
   >();
 
+  const findExpiredPayments = jest.fn(async () =>
+    [...payments.values()]
+      .filter((payment) =>
+        payment.status === PaymentStatus.PENDING &&
+        payment.expiresAt !== null &&
+        payment.expiresAt <= new Date(),
+      )
+      .map(({ id }) => ({ id })),
+  );
+
   const prisma = {
     $transaction: transaction,
-    payment: { findUnique: findPayment },
+    payment: {
+      findUnique: findPayment,
+      findMany: findExpiredPayments,
+      update: updatePayment,
+    },
   };
 
   const service = new PaymentsService(
@@ -98,7 +133,11 @@ describe('PaymentsService State Machine integration', () => {
       userId: 7,
       total: 94000,
       status: OrderStatus.PENDING,
+      loyaltyAwardedAt: null,
     };
+
+    process.env.VNPAY_TMN_CODE = 'TESTCODE';
+    process.env.VNPAY_HASH_SECRET = 'sandbox-secret';
 
     transaction.mockImplementation(
       async (callback) => callback(tx),
@@ -111,23 +150,32 @@ describe('PaymentsService State Machine integration', () => {
     updateOrder.mockImplementation(async ({ where, data }) => {
       if (
         where.id !== order.id ||
-        where.status !== order.status
+        where.status !== order.status ||
+        ('loyaltyAwardedAt' in where && where.loyaltyAwardedAt !== order.loyaltyAwardedAt)
       ) {
         return { count: 0 };
       }
 
-      order.status = data.status;
+      if (data.status) order.status = data.status;
+      if (data.loyaltyAwardedAt) order.loyaltyAwardedAt = data.loyaltyAwardedAt;
       return { count: 1 };
     });
 
     findPayment.mockImplementation(async ({ where }) =>
-      payments.get(where.idempotencyKey) ?? null,
+      [...payments.values()].find((payment) =>
+        (where.id !== undefined && payment.id === where.id) ||
+        (where.idempotencyKey !== undefined && payment.idempotencyKey === where.idempotencyKey) ||
+        (where.providerReference !== undefined && payment.providerReference === where.providerReference),
+      ) ?? null,
     );
 
     createPayment.mockImplementation(async ({ data }) => {
       const payment: Payment = {
         id: nextPaymentId++,
         ...data,
+        providerReference: null,
+        checkoutUrl: null,
+        expiresAt: null,
         pointsUsed: 0,
         createdAt: new Date(),
       };
@@ -147,7 +195,7 @@ describe('PaymentsService State Machine integration', () => {
 
       const updated = {
         ...payment,
-        status: data.status,
+        ...data,
       };
 
       payments.set(updated.idempotencyKey, updated);
@@ -155,46 +203,87 @@ describe('PaymentsService State Machine integration', () => {
     });
   });
 
-  it('moves PENDING to PAID after successful payment', async () => {
+  function signedVnpayIpn(overrides: Record<string, string> = {}) {
+    const params = {
+      vnp_Amount: '9400000',
+      vnp_Command: 'pay',
+      vnp_ResponseCode: '00',
+      vnp_TmnCode: 'TESTCODE',
+      vnp_TxnRef: '1',
+      vnp_TransactionStatus: '00',
+      ...overrides,
+    };
+    const canonical = new URLSearchParams(
+      Object.entries(params).sort(([left], [right]) => left.localeCompare(right)),
+    ).toString();
+    return {
+      ...params,
+      vnp_SecureHash: createHmac('sha512', 'sandbox-secret')
+        .update(canonical, 'utf8')
+        .digest('hex'),
+    };
+  }
+
+  it('creates a pending payment and leaves the order pending', async () => {
     const result = await service.processPayment(
-      7, 8, 94000, 'MOMO', 'pay-success',
+      7, 8, 94000, 'VNPAY', 'pay-success',
     );
 
-    expect(result.status).toBe(OrderStatus.PAID);
-    expect(result.paymentStatus).toBe(PaymentStatus.SUCCESS);
-    expect(order.status).toBe(OrderStatus.PAID);
-
-    expect(updateOrder).toHaveBeenCalledWith({
-      where: {
-        id: 8,
-        status: OrderStatus.PENDING,
-      },
-      data: { status: OrderStatus.PAID },
-    });
+    expect(result.status).toBe(OrderStatus.PENDING);
+    expect(result.paymentStatus).toBe(PaymentStatus.PENDING);
+    expect(result.checkoutUrl).toContain('vnp_SecureHash=');
+    expect(order.status).toBe(OrderStatus.PENDING);
+    expect(updateOrder).not.toHaveBeenCalled();
   });
 
-  it('handles failed payment and a successful retry', async () => {
-    const failed = await service.processPayment(
-      7, 8, 94000, 'CARD', 'pay-failed', true,
-    );
+  it('marks an order paid only after a valid VNPay IPN', async () => {
+    await service.processPayment(7, 8, 94000, 'VNPAY', 'ipn-success');
 
-    expect(failed.status).toBe(OrderStatus.PAYMENT_FAILED);
-    expect(order.status).toBe(OrderStatus.PAYMENT_FAILED);
+    const result = await service.handleVnpayIpn(signedVnpayIpn());
 
-    const retried = await service.processPayment(
-      7, 8, 94000, 'CARD', 'pay-retry',
-    );
-
-    expect(retried.status).toBe(OrderStatus.PAID);
+    expect(result).toEqual({ RspCode: '00', Message: 'Confirm Success' });
     expect(order.status).toBe(OrderStatus.PAID);
+    expect([...payments.values()][0].status).toBe(PaymentStatus.SUCCESS);
+    expect(tx.user.update).toHaveBeenCalledTimes(1);
+  });
 
-    expect(
-      updateOrder.mock.calls.map(([args]) => args.data.status),
-    ).toEqual([
-      OrderStatus.PAYMENT_FAILED,
-      OrderStatus.PENDING,
-      OrderStatus.PAID,
-    ]);
+  it('rejects invalid VNPay signatures before looking up or changing a payment', async () => {
+    const result = await service.handleVnpayIpn({
+      ...signedVnpayIpn(),
+      vnp_SecureHash: '0'.repeat(128),
+    });
+
+    expect(result).toEqual({ RspCode: '97', Message: 'Invalid signature' });
+    expect(findPayment).not.toHaveBeenCalled();
+    expect(order.status).toBe(OrderStatus.PENDING);
+  });
+
+  it('expires the QR and cancels the order when an IPN arrives after expiry', async () => {
+    await service.processPayment(7, 8, 94000, 'VNPAY', 'ipn-expired');
+    await updatePayment({
+      where: { id: 1 },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
+
+    const result = await service.handleVnpayIpn(signedVnpayIpn());
+
+    expect(result).toEqual({ RspCode: '02', Message: 'Payment expired' });
+    expect(order.status).toBe(OrderStatus.CANCELLED);
+    expect([...payments.values()][0].status).toBe(PaymentStatus.FAILED);
+  });
+
+  it('automatically cancels pending orders during the expiry sweep', async () => {
+    await service.processPayment(7, 8, 94000, 'VNPAY', 'sweep-expired');
+    await updatePayment({
+      where: { id: 1 },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
+
+    await (service as unknown as { expirePendingPayments: () => Promise<void> })
+      .expirePendingPayments();
+
+    expect(order.status).toBe(OrderStatus.CANCELLED);
+    expect([...payments.values()][0].status).toBe(PaymentStatus.FAILED);
   });
 
   it('blocks invalid payment transition', async () => {
@@ -202,7 +291,7 @@ describe('PaymentsService State Machine integration', () => {
 
     await expect(
       service.processPayment(
-        7, 8, 94000, 'MOMO', 'pay-invalid',
+        7, 8, 94000, 'VNPAY', 'pay-invalid',
       ),
     ).rejects.toThrow(ConflictException);
 
@@ -211,21 +300,39 @@ describe('PaymentsService State Machine integration', () => {
 
   it('returns same payment for same idempotency key', async () => {
     const first = await service.processPayment(
-      7, 8, 94000, 'MOMO', 'same-key',
+      7, 8, 94000, 'VNPAY', 'same-key',
     );
 
     const second = await service.processPayment(
-      7, 8, 94000, 'MOMO', 'same-key',
+      7, 8, 94000, 'VNPAY', 'same-key',
     );
 
     expect(second).toEqual(first);
     expect(createPayment).toHaveBeenCalledTimes(1);
   });
 
+  it('reuses the existing active session when a new tab has a fresh idempotency key', async () => {
+    const first = await service.processPayment(7, 8, 94000, 'VNPAY', 'active-first');
+    const replay = await service.processPayment(7, 8, 94000, 'VNPAY', 'active-second');
+
+    expect(replay).toEqual(first);
+    expect(createPayment).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not reuse a pending session with a different amount', async () => {
+    await service.processPayment(7, 8, 94000, 'VNPAY', 'active-first');
+
+    await expect(
+      service.processPayment(7, 8, 93000, 'VNPAY', 'active-second'),
+    ).rejects.toThrow(ConflictException);
+
+    expect(createPayment).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects a payment amount mismatch', async () => {
     await expect(
       service.processPayment(
-        7, 8, 1, 'MOMO', 'wrong-amount',
+        7, 8, 1, 'VNPAY', 'wrong-amount',
       ),
     ).rejects.toThrow(BadRequestException);
 

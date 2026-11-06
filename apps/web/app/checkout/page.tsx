@@ -11,7 +11,7 @@ import {
   getAccessToken,
   fetchMyProfile,
   LOYALTY_REDEMPTION_VND,
-  type PaymentMethod,
+  type CheckoutPaymentMethod,
   type OrderItemInput,
 } from '@/lib/api';
 
@@ -23,7 +23,7 @@ export default function CheckoutPage() {
     checkoutItemKeys === null || checkoutItemKeys.includes(item.key),
   );
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('MOMO');
+  const paymentMethod: CheckoutPaymentMethod = 'VNPAY';
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -152,8 +152,12 @@ export default function CheckoutPage() {
         points: String(appliedPoints),
         cartKeys: items.map((item) => item.key).join('|'),
       });
+      window.sessionStorage.setItem(
+        `brewlite-payment-cart:${targetOrderId}`,
+        items.map((item) => item.key).join('|'),
+      );
       router.push(
-        `${paymentMethod === 'MOMO' ? '/checkout/qr' : '/checkout/confirm'}?${params.toString()}` as any,
+        `/checkout/qr?${params.toString()}` as any,
       );
     } catch (err: any) {
       setErrorMessage(
@@ -234,40 +238,9 @@ export default function CheckoutPage() {
 
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Phương thức thanh toán</h2>
-            <div className="space-y-3">
-              <label className="flex cursor-pointer items-center justify-between rounded-xl border p-4 transition hover:bg-amber-50/50 has-[:checked]:border-amber-600 has-[:checked]:bg-amber-50">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="method"
-                    value="MOMO"
-                    checked={paymentMethod === 'MOMO'}
-                    onChange={() => setPaymentMethod('MOMO')}
-                    className="h-4 w-4 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">Ví điện tử (Momo / VNPay / ZaloPay)</p>
-                    <p className="text-xs text-gray-500">Quét QR để mở trang xác nhận (demo, không chuyển tiền)</p>
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex cursor-pointer items-center justify-between rounded-xl border p-4 transition hover:bg-amber-50/50 has-[:checked]:border-amber-600 has-[:checked]:bg-amber-50">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="radio"
-                    name="method"
-                    value="CARD"
-                    checked={paymentMethod === 'CARD'}
-                    onChange={() => setPaymentMethod('CARD')}
-                    className="h-4 w-4 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">Thẻ ngân hàng / Thẻ quốc tế</p>
-                    <p className="text-xs text-gray-500">Xem lại đơn và xác nhận (demo, không nhập số thẻ)</p>
-                  </div>
-                </div>
-              </label>
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+              <p className="font-medium text-gray-900">VNPay QR</p>
+              <p className="text-xs text-gray-600">Thanh toán qua VNPay Sandbox</p>
             </div>
           </div>
         </div>
@@ -426,7 +399,7 @@ export default function CheckoutPage() {
             onClick={handlePayment}
             className="mt-6 w-full rounded-xl bg-amber-600 py-3 text-center text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
           >
-            {loading ? 'Đang tạo đơn...' : paymentMethod === 'MOMO' ? 'Tiếp tục đến mã QR' : 'Xem lại đơn & xác nhận'}
+            {loading ? 'Đang tạo đơn...' : 'Tiếp tục thanh toán'}
           </button>
         </div>
       </div>

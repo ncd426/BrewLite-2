@@ -18,6 +18,7 @@ import { OrdersController } from '../orders/orders.controller';
 import { OrdersService } from '../orders/orders.service';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
+import { createSignedVnpayIpn } from './payment-test-utils';
 
 const dbDescribe =
   process.env.RUN_DB_INTEGRATION === '1'
@@ -35,6 +36,8 @@ dbDescribe('Promotion and loyalty - PostgreSQL integration', () => {
   let promotionCode = '';
 
   beforeAll(async () => {
+    process.env.VNPAY_TMN_CODE = 'TESTCODE';
+    process.env.VNPAY_HASH_SECRET = 'sandbox-secret';
     const databaseUrl = process.env.DATABASE_URL;
 
     if (!databaseUrl) {
@@ -198,6 +201,12 @@ dbDescribe('Promotion and loyalty - PostgreSQL integration', () => {
     }
   });
 
+  function notifyVnpay(paymentId: number, amount: number, successful = true) {
+    return request(app.getHttpServer())
+      .get('/payments/webhooks/vnpay')
+      .query(createSignedVnpayIpn(paymentId, amount, successful));
+  }
+
   it('applies promotion and awards loyalty only after PAID', async () => {
     // (35000 + 5000 size M + 6000 pearl) * 2 = 92000
     // 10% discount = 9200
@@ -244,7 +253,7 @@ dbDescribe('Promotion and loyalty - PostgreSQL integration', () => {
 
     const paymentBody = {
       orderId,
-      method: 'CARD',
+      method: 'VNPAY',
     };
 
     const first = await request(app.getHttpServer())
@@ -256,8 +265,8 @@ dbDescribe('Promotion and loyalty - PostgreSQL integration', () => {
     expect(first.body).toMatchObject({
       orderId,
       amount: 82800,
-      status: OrderStatus.PAID,
-      paymentStatus: PaymentStatus.SUCCESS,
+      status: OrderStatus.PENDING,
+      paymentStatus: PaymentStatus.PENDING,
     });
 
     const replay = await request(app.getHttpServer())
@@ -267,6 +276,7 @@ dbDescribe('Promotion and loyalty - PostgreSQL integration', () => {
       .expect(201);
 
     expect(replay.body).toEqual(first.body);
+    await notifyVnpay(first.body.id, first.body.amount).expect(200);
 
     const paymentCount = await prisma.payment.count({
       where: { orderId },
@@ -335,10 +345,12 @@ dbDescribe('Promotion and loyalty - PostgreSQL integration', () => {
       .set('Idempotency-Key', randomUUID())
       .send({
         orderId,
-        method: 'MOMO',
-        simulateFailure: true,
+        method: 'VNPAY',
       })
       .expect(201);
+
+    await notifyVnpay(failedPayment.body.id, failedPayment.body.amount, false)
+      .expect(200);
 
     expect(failedPayment.body.paymentStatus)
       .toBe(PaymentStatus.FAILED);
