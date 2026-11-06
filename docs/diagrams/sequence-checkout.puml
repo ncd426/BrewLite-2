@@ -5,7 +5,7 @@ skinparam ParticipantPadding 10
 skinparam ResponseMessageBelowArrow true
 skinparam style strictuml
 
-title Sequence Diagram: Đặt hàng & Thanh toán (BrewLite Checkout)
+title Sequence Diagram: Đặt hàng & Thanh toán mô phỏng (BrewLite)
 
 actor "Customer" as User
 box "Frontend" #EBF5FB
@@ -13,113 +13,140 @@ box "Frontend" #EBF5FB
 end box
 
 box "Backend (NestJS)" #FEF9E7
-    participant "API Gateway / Guards" as Guard
+    participant "AuthController" as AuthController
+    participant "UsersController" as UsersController
+    participant "OrdersController" as OrdersController
     participant "Order Service" as OrderSvc
+    participant "PaymentsController" as PaymentsController
     participant "Payment Service" as PaySvc
 end box
 
 database "PostgreSQL (Prisma)" as DB
-participant "Payment Gateway\n(Mock / VNPay)" as Gateway
 
-== 1. Tải thông tin trang Checkout ==
-User -> Client: Mở màn hình /checkout
+== 1. Tải thông tin checkout ==
+User -> Client: Mở /checkout
 activate Client
-Client -> Guard: GET /users/me (Bearer Token)
-activate Guard
-
-alt Token không hợp lệ / Hết hạn
-    Guard --> Client: 401 Unauthorized
-    Client --> User: Redirect sang /login?redirect=/checkout
-else Token hợp lệ
-    Guard -> OrderSvc: getCheckoutProfile(userId)
-    activate OrderSvc
-    OrderSvc -> DB: Query User Profile & Loyalty Points
-    activate DB
-    DB --> OrderSvc: User data & điểm hiện có
-    deactivate DB
-    OrderSvc --> Guard: User Profile & Points DTO
-    deactivate OrderSvc
-    Guard --> Client: 200 OK (Profile & Loyalty Points)
-    deactivate Guard
-    Client --> User: Hiển thị giỏ hàng, điểm thưởng, form thanh toán
+alt Chưa có access token
+    Client --> User: Chuyển sang /login?redirect=/checkout
+    User -> Client: Đăng nhập
+    Client -> AuthController: POST /auth/login\n{ email, password }
+    AuthController -> DB: Tìm user; xác thực mật khẩu
+    DB --> AuthController: Kết quả xác thực
+    alt Đăng nhập thất bại
+        AuthController --> Client: 401 Unauthorized
+        Client --> User: Hiển thị lỗi; giữ nguyên giỏ hàng
+    else Đăng nhập thành công
+        AuthController --> Client: Access token
+        Client -> Client: Lưu access token
+    end
 end
+
+Client -> UsersController: GET /users/me\nAuthorization: Bearer <JWT>
+activate UsersController
+alt JWT không hợp lệ/hết hạn
+    UsersController --> Client: 401 Unauthorized
+    Client -> Client: Xóa access token
+    Client --> User: Hiển thị lỗi xác thực
+else JWT hợp lệ
+    UsersController -> DB: Đọc hồ sơ người dùng và loyaltyPoints
+    DB --> UsersController: User profile
+    UsersController --> Client: 200 OK (profile, loyaltyPoints)
+    Client --> User: Hiển thị giỏ hàng, điểm và tùy chọn checkout
+end
+deactivate UsersController
 deactivate Client
 
-== 2. Đặt hàng & Thực hiện thanh toán ==
-User -> Client: Chọn phương thức (MOMO/CARD) & Xác nhận thanh toán
+== 2. Tạo đơn ==
+User -> Client: Chọn MOMO/CARD, mã khuyến mãi,\nđiểm muốn dùng và xác nhận
 activate Client
-Client -> Client: Validate items > 0, points <= maxRedeemable
+opt Xem trước mã khuyến mãi
+    Client -> OrdersController: POST /orders/promotion-preview\n{ items, promotionCode }
+    activate OrdersController
+    OrdersController -> DB: Đọc giá sản phẩm và quy tắc khuyến mãi
+    DB --> OrdersController: Promotion quote
+    OrdersController --> Client: 201 Created (subtotal, discountAmount, total)
+    deactivate OrdersController
+end
 
-Client -> Guard: POST /orders (Body: items, pointsRedeemed, promoCode)\nHeader: Authorization (Bearer Token)
-activate Guard
-Guard -> OrderSvc: createOrder(dto, userId)
+Client -> OrdersController: POST /orders\n{ items, promotionCode? }\nAuthorization: Bearer <JWT>
+activate OrdersController
+OrdersController -> OrderSvc: create(userId, items, promotionCode?)
 activate OrderSvc
-
 OrderSvc -> DB: BEGIN TRANSACTION
-activate DB
-OrderSvc -> DB: Query kiểm tra & giữ tồn kho nguyên liệu (Optimistic Lock)
-alt Hết hàng / Không đủ tồn kho
-    DB --> OrderSvc: Out of stock / Concurrency conflict
+OrderSvc -> DB: Đọc sản phẩm, giá và công thức nguyên liệu
+DB --> OrderSvc: Product prices and ingredient requirements
+OrderSvc -> DB: Kiểm tra và trừ tồn nguyên liệu có điều kiện
+alt Thiếu tồn kho hoặc dữ liệu không hợp lệ
     OrderSvc -> DB: ROLLBACK
-    OrderSvc --> Guard: 400 Bad Request / 409 Conflict
-    Guard --> Client: 400 / 409 (Món/Nguyên liệu không đủ số lượng)
-    Client --> User: Báo lỗi hết hàng (GIỮ NGUYÊN GIỎ HÀNG)
-else Đủ tồn kho & Tạo đơn thành công
-    OrderSvc -> DB: Tính lại tiền từ DB, tạm trừ điểm thưởng\nTạo Order (status = PENDING)
-    DB --> OrderSvc: Order created (id, orderCode, totalAmount)
+    OrderSvc --> OrdersController: 400 Bad Request
+    OrdersController --> Client: 400 (không tạo đơn)
+    Client --> User: Báo lỗi; giữ giỏ để chỉnh sửa
+else Đủ tồn kho
+    OrderSvc -> DB: Tính giá/khuyến mãi phía server;\nTạo Order, OrderItem (PENDING)
+    DB --> OrderSvc: Order and items
     OrderSvc -> DB: COMMIT
-    deactivate DB
-    OrderSvc --> Guard: 201 Created (orderId, orderCode, amount)
+    OrderSvc --> OrdersController: { orderId, status, subtotal,\ndiscountAmount, total, items }
+    OrdersController --> Client: 201 Created (order details)
     deactivate OrderSvc
-    Guard --> Client: 201 Created (orderId, orderCode, amount)
-    deactivate Guard
+    deactivate OrdersController
 
-    == 3. Xử lý thanh toán với Idempotency Key ==
-    Client -> Client: Sinh uuid v4 (Idempotency-Key)
-    Client -> Guard: POST /payments\nHeader: Idempotency-Key: <UUID>, Authorization: Bearer\nBody: { orderId, method }
-    activate Guard
-    Guard -> PaySvc: processPayment(dto, idempotencyKey)
+    == 3. Xác nhận đơn và thanh toán mô phỏng ==
+    Client -> Client: Điều hướng /checkout/qr hoặc /checkout/confirm
+    Client -> OrdersController: GET /orders/:id\nAuthorization: Bearer <JWT>
+    activate OrdersController
+    OrdersController -> OrderSvc: getOrderById(userId, orderId)
+    activate OrderSvc
+    OrderSvc -> DB: Đọc đơn thuộc người dùng hiện tại
+    DB --> OrderSvc: Order, items and current status
+    OrderSvc --> OrdersController: Order details
+    OrdersController --> Client: 200 OK (order details)
+    deactivate OrderSvc
+    deactivate OrdersController
+    User -> Client: Xác nhận thanh toán mô phỏng
+    Client -> Client: Lấy/tạo UUID lưu trong sessionStorage
+    Client -> PaymentsController: POST /payments\nIdempotency-Key: <UUID>\n{ orderId, method, pointsToRedeem }
+    activate PaymentsController
+    PaymentsController -> PaySvc: processPayment(userId, orderId,\nmethod, key, pointsToRedeem)
     activate PaySvc
-
-    PaySvc -> DB: Tìm Payment theo idempotencyKey
-    activate DB
-    DB --> PaySvc: Kết quả kiểm tra
-    deactivate DB
-
-    alt Idempotency-Key đã tồn tại (Replay Request)
-        PaySvc --> Guard: Trả về kết quả giao dịch trước đó (cached response)
-        Guard --> Client: 200 OK (Previous Payment Result)
-    else Khóa mới: Thực hiện thanh toán qua Gateway
-        PaySvc -> Gateway: Gửi yêu cầu trừ tiền / Giao dịch Sandbox
-        activate Gateway
-        Gateway --> PaySvc: Phản hồi kết quả (SUCCESS / FAILED)
-        deactivate Gateway
-
-        alt Thanh toán Thất bại (Payment Failed)
-            PaySvc -> DB: BEGIN TRANSACTION
-            activate DB
-            PaySvc -> DB: Lưu Payment (status = FAILED)\nCập nhật Order (status = PAYMENT_FAILED)\nHoàn lại điểm thưởng & giải phóng tồn kho
-            PaySvc -> DB: COMMIT
-            deactivate DB
-            PaySvc --> Guard: 400 Payment Failed
-            Guard --> Client: 400 (Thanh toán thất bại)
-            Client --> User: Báo lỗi "Thanh toán thất bại" (GIỮ NGUYÊN GIỎ HÀNG)
-        else Thanh toán Thành công (Payment Success)
-            PaySvc -> DB: BEGIN TRANSACTION
-            activate DB
-            PaySvc -> DB: Lưu Payment (status = SUCCESS, key = UUID)\nCập nhật Order (status = PAID)\nCộng điểm thưởng mới (Loyalty Points)\nChốt trừ kho nguyên liệu chính thức
-            PaySvc -> DB: COMMIT
-            deactivate DB
-            PaySvc --> Guard: 200 OK (Payment Success)
-            deactivate PaySvc
-            Guard --> Client: 200 OK (orderId, status = PAID)
-            deactivate Guard
-
-            Client -> Client: Xóa sạch giỏ hàng (clearCart)
-            Client --> User: Chuyển hướng sang màn hình xác nhận (/order-success)
-        end
-    end Stop please now.
+    PaySvc -> DB: BEGIN TRANSACTION; đọc đơn, kiểm tra chủ sở hữu,\nkiểm tra số tiền và idempotency key
+    alt Key đã dùng với cùng dữ liệu
+        DB --> PaySvc: Payment hiện có
+        PaySvc --> PaymentsController: Kết quả cũ (không tạo payment mới)
+        PaymentsController --> Client: 201 Created (kết quả trước đó)
+    else Key mới, simulateFailure=true (chỉ môi trường không production)
+        PaySvc -> DB: Tạo Payment FAILED;\nOrder chuyển PAYMENT_FAILED
+        PaySvc -> DB: COMMIT\n(không trừ điểm; tồn kho đã trừ khi tạo đơn)
+        PaySvc --> PaymentsController: 201 Created\n{ status: PAYMENT_FAILED, paymentStatus: FAILED }
+        PaymentsController --> Client: 201 Created (thanh toán thất bại)
+    else Key mới, thanh toán mô phỏng thành công (mặc định)
+        PaySvc -> DB: Tạo Payment SUCCESS; Order chuyển PAID
+        PaySvc -> DB: Trừ pointsToRedeem và cộng điểm thưởng\n(mỗi đơn một lần)
+        PaySvc -> DB: COMMIT
+        PaySvc --> PaymentsController: 201 Created\n{ status: PAID, paymentStatus: SUCCESS }
+        PaymentsController --> Client: 201 Created (thanh toán thành công)
+    end
+    deactivate PaySvc
+    deactivate PaymentsController
+    alt Response status = PAID
+        Client -> Client: Xóa các mặt hàng đã mua khỏi giỏ
+        Client --> User: Chuyển đến /checkout/success?orderId=...
+    else Response status = PAYMENT_FAILED
+        Client --> User: Báo lỗi; giữ mặt hàng trong giỏ
+    end
 end
 deactivate Client
 
+== 4. Theo dõi đơn ==
+User -> Client: Mở lịch sử đơn hàng
+Client -> OrdersController: GET /orders/me\nAuthorization: Bearer <JWT>
+activate OrdersController
+OrdersController -> OrderSvc: getMyOrders(userId)
+activate OrderSvc
+OrderSvc -> DB: Đọc lịch sử đơn của người dùng
+DB --> OrderSvc: Orders and latest statuses
+OrderSvc --> OrdersController: { userId, orders }
+OrdersController --> Client: 200 OK (order history)
+deactivate OrderSvc
+deactivate OrdersController
+Client --> User: Hiển thị mã ID, tổng tiền và trạng thái mới nhất
 @enduml

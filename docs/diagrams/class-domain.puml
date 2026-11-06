@@ -1,4 +1,4 @@
-@startuml BrewLite Domain Class Diagram
+@startuml class-domain
 left to right direction
 skinparam shadowing false
 skinparam classAttributeIconSize 0
@@ -41,6 +41,26 @@ class Product {
   --
   + findAll(): Product[]
   + findOne(id): Product
+}
+
+class Ingredient {
+  +id: Int
+  +code: String <<unique>>
+  +name: String <<unique>>
+  +unit: String
+  +stockQuantity: Int = 0
+  +minStock: Int = 0
+  +importPrice: Int?
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class ProductIngredient {
+  +id: Int
+  +productId: Int
+  +ingredientId: Int
+  +quantity: Int
+  +isOptional: Boolean = false
 }
 
 class Order {
@@ -156,10 +176,20 @@ enum LoyaltyTransactionType <<conceptual>> {
 User "1" -- "0..*" Order : places
 Order "1" -- "0..*" OrderItem : contains
 Product "1" -- "0..*" OrderItem : ordered as
+Product "1" -- "0..*" ProductIngredient : recipe
+Ingredient "1" -- "0..*" ProductIngredient : used by
 Order "1" -- "0..*" Payment : payments
 Promotion "0..1" -- "0..*" Order : applied to
 User "1" -- "0..*" LoyaltyTransaction : history
 Order "0..1" -- "0..*" LoyaltyTransaction : related to
+
+note right of ProductIngredient
+Persisted recipe join model.
+Stock is decremented atomically
+when an order is created.
+The (productId, ingredientId) pair
+is unique in Prisma.
+end note
 
 note right of LoyaltyTransaction
 Conceptual ledger class required by the domain task.
