@@ -4,12 +4,12 @@ import {
   Body,
   Controller,
   Headers,
+  Ip,
   Post,
   UseGuards,
 } from '@nestjs/common';
 
 import {
-  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -35,12 +35,8 @@ class PaymentDto {
   @Max(2147483647)
   amount?: number;
 
-  @IsIn(['MOMO', 'CARD'])
-  method!: 'MOMO' | 'CARD';
-
-  @IsOptional()
-  @IsBoolean()
-  simulateFailure?: boolean;
+  @IsIn(['VNPAY'])
+  method!: 'VNPAY';
 
   @IsOptional()
   @IsInt()
@@ -66,6 +62,7 @@ export class PaymentsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: PaymentDto,
     @Headers('idempotency-key') idempotencyKey?: string,
+    @Ip() clientIp = '127.0.0.1',
   ) {
     const key = idempotencyKey?.trim();
 
@@ -81,8 +78,8 @@ export class PaymentsController {
       dto.amount,
       dto.method,
       key,
-      dto.simulateFailure ?? false,
       dto.pointsToRedeem ?? 0,
+      clientIp,
     );
   }
 }

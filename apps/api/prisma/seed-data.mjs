@@ -123,21 +123,21 @@ export const ORDERS = [
   { key: 'brewlite-seed-v1-pending', email: 'demo@brewlite.test', status: 'PENDING', paymentStatus: 'PENDING', method: 'CARD', promotion: null, items: [
     { name: 'Cappuccino', size: 'S', qty: 1, toppings: [] },
   ] },
-  { key: 'brewlite-seed-v1-paid', email: 'demo@brewlite.test', status: 'PAID', paymentStatus: 'SUCCESS', method: 'MOMO', promotion: 'WELCOME10', items: [
+  { key: 'brewlite-seed-v1-paid', email: 'demo@brewlite.test', status: 'PAID', paymentStatus: 'SUCCESS', method: 'VNPAY', promotion: 'WELCOME10', items: [
     { name: 'C\u00e0 Ph\u00ea Mu\u1ed1i BrewLite', size: 'M', qty: 2, toppings: ['Tr\u00e2n ch\u00e2u'] },
   ] },
   { key: 'brewlite-seed-v1-preparing', email: 'khach1@brewlite.test', status: 'PREPARING', paymentStatus: 'SUCCESS', method: 'CARD', promotion: 'GIAM20K', items: [
     { name: 'Cold Brew Cam V\u00e0ng BrewLite', size: 'L', qty: 1, toppings: ['Kem cheese'] },
     { name: 'Cappuccino', size: 'M', qty: 1, toppings: [] },
   ] },
-  { key: 'brewlite-seed-v1-ready', email: 'khach2@brewlite.test', status: 'READY', paymentStatus: 'SUCCESS', method: 'MOMO', promotion: 'WELCOME10', items: [
+  { key: 'brewlite-seed-v1-ready', email: 'khach2@brewlite.test', status: 'READY', paymentStatus: 'SUCCESS', method: 'VNPAY', promotion: 'WELCOME10', items: [
     { name: 'Tr\u00e0 \u0110\u00e0o Cam S\u1ea3', size: 'M', qty: 2, toppings: ['Th\u1ea1ch c\u00e0 ph\u00ea'] },
   ] },
   { key: 'brewlite-seed-v1-completed', email: 'demo@brewlite.test', status: 'COMPLETED', paymentStatus: 'SUCCESS', method: 'CARD', promotion: 'GIAM20K', items: [
     { name: 'B\u1ea1c X\u1ec9u S\u00e0i G\u00f2n', size: 'L', qty: 1, toppings: [] },
     { name: 'C\u00e0 ph\u00ea Phin', size: 'M', qty: 2, toppings: [] },
   ] },
-  { key: 'brewlite-seed-v1-failed', email: 'khach2@brewlite.test', status: 'PAYMENT_FAILED', paymentStatus: 'FAILED', method: 'MOMO', promotion: null, items: [
+  { key: 'brewlite-seed-v1-failed', email: 'khach2@brewlite.test', status: 'PAYMENT_FAILED', paymentStatus: 'FAILED', method: 'VNPAY', promotion: null, items: [
     { name: 'Matcha Latte', size: 'M', qty: 1, toppings: [] },
   ] },
   { key: 'brewlite-seed-v1-cancelled', email: 'khach1@brewlite.test', status: 'CANCELLED', paymentStatus: 'FAILED', method: 'CARD', promotion: null, items: [

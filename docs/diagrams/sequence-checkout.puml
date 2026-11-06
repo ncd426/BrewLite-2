@@ -56,8 +56,8 @@ end
 deactivate UsersController
 deactivate Client
 
-== 2. Tạo đơn ==
-User -> Client: Chọn MOMO/CARD, mã khuyến mãi,\nđiểm muốn dùng và xác nhận
+== 2. Đặt hàng & Thực hiện thanh toán ==
+User -> Client: Chọn VNPay Sandbox & Xác nhận thanh toán
 activate Client
 opt Xem trước mã khuyến mãi
     Client -> OrdersController: POST /orders/promotion-preview\n{ items, promotionCode }

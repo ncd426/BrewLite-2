@@ -56,7 +56,7 @@ describe('work accounts cannot place personal orders', () => {
       await request(app.getHttpServer()).post('/orders').set('Authorization', authorization)
         .send({ items: [{ productId: 1, size: 'M', qty: 1 }] }).expect(403);
       await request(app.getHttpServer()).post('/payments').set('Authorization', authorization)
-        .set('Idempotency-Key', 'should-not-be-processed').send({ orderId: 1, method: 'MOMO' }).expect(403);
+        .set('Idempotency-Key', 'should-not-be-processed').send({ orderId: 1, method: 'VNPAY' }).expect(403);
       expect(orders.create).not.toHaveBeenCalled();
       expect(orders.getMyOrders).not.toHaveBeenCalled();
       expect(payments.processPayment).not.toHaveBeenCalled();

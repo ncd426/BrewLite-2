@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
+import { createSignedVnpayIpn } from './payment-test-utils';
 
 // Integration test chỉ chạy khi bật cờ.
 // Các unit test và CI thông thường không cần PostgreSQL.
@@ -32,6 +33,8 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
   let orderId = 0;
 
   beforeAll(async () => {
+    process.env.VNPAY_TMN_CODE = 'TESTCODE';
+    process.env.VNPAY_HASH_SECRET = 'sandbox-secret';
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL is required');
     }
@@ -124,11 +127,17 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
     }
   });
 
+  function notifyVnpay(paymentId: number, successful = true) {
+    return request(app.getHttpServer())
+      .get('/payments/webhooks/vnpay')
+      .query(createSignedVnpayIpn(paymentId, 94000, successful));
+  }
+
   it('Test (b): same key twice creates one Payment', async () => {
     const key = randomUUID();
     const body = {
       orderId,
-      method: 'MOMO',
+      method: 'VNPAY',
     };
 
     const first = await request(app.getHttpServer())
@@ -146,7 +155,8 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
     // Cùng một bản ghi, cùng nội dung phản hồi.
     expect(second.body).toEqual(first.body);
     expect(second.body.id).toBe(first.body.id);
-    expect(first.body.paymentStatus).toBe('SUCCESS');
+    expect(first.body.paymentStatus).toBe('PENDING');
+    await notifyVnpay(first.body.id).expect(200);
 
     // Kiểm tra số bản ghi thực trong PostgreSQL.
     const payments = await prisma.payment.findMany({
@@ -175,7 +185,7 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
       .set('Idempotency-Key', key)
       .send({
         orderId,
-        method: 'MOMO',
+        method: 'VNPAY',
       })
       .expect(201);
 
@@ -184,7 +194,8 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
       .set('Idempotency-Key', key)
       .send({
         orderId,
-        method: 'CARD',
+        method: 'VNPAY',
+        amount: 1,
       })
       .expect(409);
 
@@ -200,7 +211,7 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
       .post('/payments')
       .send({
         orderId,
-        method: 'MOMO',
+        method: 'VNPAY',
       })
       .expect(400);
 
@@ -215,21 +226,23 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
     const firstKey = randomUUID();
     const secondKey = randomUUID();
 
-    await request(app.getHttpServer())
+    const first = await request(app.getHttpServer())
       .post('/payments')
       .set('Idempotency-Key', firstKey)
       .send({
         orderId,
-        method: 'CARD',
+        method: 'VNPAY',
       })
       .expect(201);
+
+    await notifyVnpay(first.body.id).expect(200);
 
     await request(app.getHttpServer())
       .post('/payments')
       .set('Idempotency-Key', secondKey)
       .send({
         orderId,
-        method: 'CARD',
+        method: 'VNPAY',
       })
       .expect(409);
 
@@ -248,23 +261,22 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
       .set('Idempotency-Key', key)
       .send({
         orderId,
-        method: 'MOMO',
-        simulateFailure: true,
+        method: 'VNPAY',
       })
       .expect(201);
+
+    await notifyVnpay(first.body.id, false).expect(200);
 
     const second = await request(app.getHttpServer())
       .post('/payments')
       .set('Idempotency-Key', key)
       .send({
         orderId,
-        method: 'MOMO',
-        simulateFailure: true,
+        method: 'VNPAY',
       })
       .expect(201);
 
-    expect(second.body).toEqual(first.body);
-    expect(first.body.status).toBe('PAYMENT_FAILED');
+    expect(second.body.paymentStatus).toBe(PaymentStatus.FAILED);
 
     const count = await prisma.payment.count({
       where: { orderId },

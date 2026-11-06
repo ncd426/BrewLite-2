@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
+import { createSignedVnpayIpn } from './payment-test-utils';
 
 const dbDescribe =
   process.env.RUN_DB_INTEGRATION === '1'
@@ -29,6 +30,8 @@ dbDescribe('Concurrent payments - PostgreSQL integration', () => {
   const expectedPoints = 9;
 
   beforeAll(async () => {
+    process.env.VNPAY_TMN_CODE = 'TESTCODE';
+    process.env.VNPAY_HASH_SECRET = 'sandbox-secret';
     const databaseUrl = process.env.DATABASE_URL;
 
     if (!databaseUrl) {
@@ -134,8 +137,14 @@ dbDescribe('Concurrent payments - PostgreSQL integration', () => {
       .set('Idempotency-Key', key)
       .send({
         orderId,
-        method: 'MOMO',
+        method: 'VNPAY',
       });
+  }
+
+  function sendIpn(paymentId: number) {
+    return request(app.getHttpServer())
+      .get('/payments/webhooks/vnpay')
+      .query(createSignedVnpayIpn(paymentId, total));
   }
 
   it('same key concurrently creates one payment and awards points once', async () => {
@@ -160,6 +169,7 @@ dbDescribe('Concurrent payments - PostgreSQL integration', () => {
       .toEqual([201, 201]);
 
     expect(responses[0].body).toEqual(responses[1].body);
+    await sendIpn(responses[0].body.id).expect(200);
 
     const payments = await prisma.payment.findMany({
       where: { orderId },
@@ -208,6 +218,8 @@ dbDescribe('Concurrent payments - PostgreSQL integration', () => {
       .sort((a, b) => a - b);
 
     expect(statuses).toEqual([201, 409]);
+    const createdResponse = responses.find((response) => response.status === 201)!;
+    await sendIpn(createdResponse.body.id).expect(200);
 
     const payments = await prisma.payment.findMany({
       where: { orderId },

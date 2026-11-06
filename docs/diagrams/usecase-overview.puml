@@ -27,9 +27,9 @@ rectangle "Hệ thống đặt hàng BrewLite" {
   usecase "Xem trước / áp dụng\nmã khuyến mãi" as Promotion
   usecase "Tạo đơn hàng" as PlaceOrder
   usecase "Kiểm tra giá, khuyến mãi\nvà tồn nguyên liệu" as ValidateOrder
-  usecase "Thanh toán mô phỏng\n(MOMO / CARD)" as Pay
+  usecase "Thanh toán VNPay\n(Sandbox)" as Pay
   usecase "Xác minh quyền sở hữu,\nsố tiền và idempotency" as VerifyPayment
-  usecase "Xử lý thanh toán\nmô phỏng nội bộ" as ProcessPayment
+  usecase "Tạo phiên thanh toán\nVNPay Sandbox" as ProcessPayment
   usecase "Ghi nhận kết quả và\ncập nhật trạng thái đơn" as RecordPayment
   usecase "Đổi điểm thưởng" as RedeemPoints
   usecase "Cộng điểm sau thanh toán\nthành công (nếu đủ điều kiện)" as AwardPoints
@@ -65,8 +65,8 @@ Admin --> ManageCatalogInventory
 Admin --> ManageRoles
 
 note right of ProcessPayment
-MOMO và CARD hiện là mô phỏng nội bộ.
-Không gọi nhà cung cấp thanh toán thật.
+VNPay Sandbox tạo phiên thanh toán có thời hạn.
+Chỉ callback IPN đã xác thực mới cập nhật đơn hàng.
 end note
 note right of AwardPoints
 Chỉ cộng điểm khi thanh toán thành công;

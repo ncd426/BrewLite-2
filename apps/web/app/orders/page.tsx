@@ -156,18 +156,12 @@ useEffect(() => {
                   </span>
                 </div>
                 {['PENDING', 'PAYMENT_FAILED'].includes(order.status) && (
-                  <div className="flex flex-wrap gap-3">
+                  <div>
                     <Link
-                      href={`/checkout/qr?orderId=${orderCode}&points=0` as any}
+                      href={`/checkout/qr?orderId=${orderCode}&method=VNPAY&points=0` as any}
                       className="rounded-lg bg-amber-600 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-700"
                     >
-                      Thanh toán tiếp bằng QR
-                    </Link>
-                    <Link
-                      href={`/checkout/confirm?orderId=${orderCode}&method=CARD&points=0` as any}
-                      className="rounded-lg border border-amber-600 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-50"
-                    >
-                      Thanh toán tiếp bằng thẻ
+                      Thanh toán tiếp bằng VNPay QR
                     </Link>
                   </div>
                 )}

@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CounterSalesService } from './counter-sales.service';
 
 const payload = {
-  method: 'MOMO' as const,
+  method: 'CASH' as const,
   items: [{ productId: 1, size: 'S', qty: 2, toppings: [] }],
 };
 
@@ -33,7 +33,7 @@ function fixture(stockOk = true) {
     } },
     payment: { create: async () => {
       paymentRecord = {
-        id: 12, method: 'MOMO', status: PaymentStatus.SUCCESS,
+        id: 12, method: 'CASH', status: PaymentStatus.SUCCESS,
         orderId: 91, pointsUsed: 0,
         order: {
           id: 91, status: OrderStatus.PAID, channel: OrderChannel.COUNTER,

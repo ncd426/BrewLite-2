@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
+import { createSignedVnpayIpn } from './payment-test-utils';
 
 const dbDescribe =
   process.env.RUN_DB_INTEGRATION === '1'
@@ -26,6 +27,8 @@ dbDescribe('Loyalty redemption - PostgreSQL integration', () => {
   let orderId = 0;
 
   beforeAll(async () => {
+    process.env.VNPAY_TMN_CODE = 'TESTCODE';
+    process.env.VNPAY_HASH_SECRET = 'sandbox-secret';
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error('DATABASE_URL required');
 
@@ -98,16 +101,21 @@ dbDescribe('Loyalty redemption - PostgreSQL integration', () => {
     if (app) await app.close();
   });
 
-  function pay(pointsToRedeem: number, key: string, simulateFailure = false) {
+  function pay(pointsToRedeem: number, key: string) {
     return request(app.getHttpServer())
       .post('/payments')
       .set('Idempotency-Key', key)
       .send({
         orderId,
-        method: 'MOMO',
+        method: 'VNPAY',
         pointsToRedeem,
-        simulateFailure,
       });
+  }
+
+  function notifyVnpay(paymentId: number, amount: number, successful = true) {
+    return request(app.getHttpServer())
+      .get('/payments/webhooks/vnpay')
+      .query(createSignedVnpayIpn(paymentId, amount, successful));
   }
 
   it('redeems points and awards on the actual amount only once', async () => {
@@ -118,6 +126,7 @@ dbDescribe('Loyalty redemption - PostgreSQL integration', () => {
     expect(replay.body).toEqual(first.body);
     expect(first.body.amount).toBe(84000);
     expect(first.body.pointsUsed).toBe(10);
+    await notifyVnpay(first.body.id, first.body.amount).expect(200);
 
     const payments = await prisma.payment.findMany({ where: { orderId } });
     expect(payments).toHaveLength(1);
@@ -144,9 +153,11 @@ dbDescribe('Loyalty redemption - PostgreSQL integration', () => {
   });
 
   it('does not deduct or award points after failed payment', async () => {
-    const response = await pay(10, randomUUID(), true).expect(201);
+    const response = await pay(10, randomUUID()).expect(201);
+    await notifyVnpay(response.body.id, response.body.amount, false).expect(200);
 
-    expect(response.body.paymentStatus).toBe(PaymentStatus.FAILED);
+    const payments = await prisma.payment.findMany({ where: { orderId } });
+    expect(payments[0].status).toBe(PaymentStatus.FAILED);
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     expect(user?.loyaltyPoints).toBe(20);

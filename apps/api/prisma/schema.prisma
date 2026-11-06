@@ -95,6 +95,9 @@ model Payment {
   id             Int          @id @default(autoincrement())
   orderId        Int
   idempotencyKey String       @unique
+  providerReference String?    @unique
+  checkoutUrl    String?
+  expiresAt      DateTime?
   amount         Int
   pointsUsed     Int          @default(0)
   method         String

@@ -32,6 +32,24 @@ does not reset or delete existing data.
 Stop the services with `docker compose down`. Add `--volumes` only when you
 intentionally want to remove the local PostgreSQL data volume.
 
+## Payment sandbox setup
+
+Customer checkout supports VNPay sandbox sessions. Configure the VNPay
+credentials in `.env` before starting the API. Set
+`PAYMENT_API_PUBLIC_URL` to an HTTPS address reachable by the providers and
+`PAYMENT_WEB_PUBLIC_URL` to the browser-facing web origin. The local Compose
+defaults are not reachable by external payment systems.
+
+Register `GET {PAYMENT_API_PUBLIC_URL}/payments/webhooks/vnpay` as the VNPay
+IPN URL in the merchant sandbox configuration. The browser return only sends
+the customer back to checkout; only a valid signed IPN updates the order.
+`PAYMENT_TTL_MINUTES` defaults to 15 and is limited to 1 through 60 minutes.
+
+The API defaults to VNPay's sandbox payment URL. Do not put sandbox or
+production secrets in source control. For local
+callback testing, expose the API through a temporary HTTPS tunnel and use that
+origin for `PAYMENT_API_PUBLIC_URL`.
+
 ## Running without Compose
 
 Run PostgreSQL separately, configure `apps/api/.env`, and follow the API

@@ -199,22 +199,25 @@ export async function createOrder(
   });
 }
 
-export type PaymentMethod = 'MOMO' | 'CARD';
+export type PaymentMethod = 'CASH' | 'CARD';
+export type CheckoutPaymentMethod = 'VNPAY';
 
 export type PaymentPayload = {
   orderId: number;
-  method: PaymentMethod;
+  method: CheckoutPaymentMethod;
   pointsToRedeem?: number;
 };
 
 export type PaymentResponse = {
-  paymentId?: number;
+  id: number;
   orderId: number;
-  status: 'PAID' | 'PAYMENT_FAILED';
-  method?: PaymentMethod;
-  amount?: number;
-  pointsUsed?: number;
-  message?: string;
+  status: 'PENDING' | 'PAID' | 'PAYMENT_FAILED';
+  paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
+  method: CheckoutPaymentMethod;
+  amount: number;
+  pointsUsed: number;
+  checkoutUrl: string | null;
+  expiresAt: string | null;
 };
 
 export async function processPayment(

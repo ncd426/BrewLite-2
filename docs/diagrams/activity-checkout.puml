@@ -19,7 +19,7 @@ skinparam activity {
 skinparam ArrowFontColor #334155
 skinparam TitleFontColor #1D3553
 
-title A2-07 - Activity Diagram: Đặt hàng và thanh toán BrewLite\n(Menu -> Checkout -> Đặt đơn -> Thanh toán mô phỏng -> Theo dõi)
+title A2-07 - Activity Diagram: Đặt hàng và thanh toán BrewLite\n(Menu -> Chi tiết -> Giỏ hàng -> Đặt đơn -> VNPay Sandbox -> Theo dõi)
 
 |Khách hàng|
 start
@@ -59,7 +59,7 @@ endif
 |Next.js (Frontend)|
 :Hiển thị điểm hiện có;
 |Khách hàng|
-:Chọn MOMO/CARD;\nNhập mã khuyến mãi hoặc điểm muốn dùng;
+:Kiểm tra món đã chọn;\nChọn VNPay Sandbox;\nCó thể dùng mã giảm giá / điểm thưởng;
 |Next.js (Frontend)|
 if (Có mã khuyến mãi?) then (Có)
   :Gửi POST /orders/promotion-preview\n{ items, promotionCode };
@@ -84,11 +84,14 @@ else (Có)
 endif
 
 |Next.js (Frontend)|
-:Nhận orderId, total, discountAmount;
-if (Phương thức thanh toán?) then (MOMO)
-  :Mở /checkout/qr;\nQR chỉ dẫn tới xác nhận mô phỏng;
-else (CARD)
-  :Mở /checkout/confirm;
+if (Tạo được phiên VNPay?) then (Có)
+  :Hiển thị /checkout/qr;\nQR mở phiên thanh toán VNPay;
+  |Khách hàng|
+  :Hoàn tất thanh toán trên VNPay Sandbox;
+else (Không)
+  |Next.js (Frontend)|
+  :Hiển thị lỗi tạo phiên thanh toán;
+  stop
 endif
 :Gọi GET /orders/:id để tải chi tiết;
 |NestJS API / PostgreSQL|
@@ -99,17 +102,15 @@ endif
 :Lấy/tạo Idempotency-Key;
 :Gửi POST /payments\n{ orderId, method, pointsToRedeem }\nHeader: Idempotency-Key;
 |NestJS API / PostgreSQL|
-:Kiểm tra chủ sở hữu, số tiền,\nđiểm và idempotency key;
-if (Key đã dùng với cùng dữ liệu?) then (Có)
-  :Trả lại kết quả thanh toán cũ;\nKhông tạo Payment thứ hai;
-else (Không)
-  if (simulateFailure=true\ntrong môi trường không production?) then (Có)
-    :Payment FAILED;\nOrder PAYMENT_FAILED;
-    :Không trừ điểm;\nTồn đã trừ khi tạo đơn;
-  else (Có)
-    :Payment SUCCESS;\nOrder PAID;
-    :Trừ điểm đã dùng và cộng điểm thưởng\ntrong transaction (mỗi đơn một lần);
-  endif
+:Kiểm tra Idempotency-Key;\nTránh ghi nhận thanh toán trùng;
+ :Chờ IPN VNPay có chữ ký hợp lệ;
+if (IPN xác thực thành công?) then (Không)
+  :Payment FAILED; Order PAYMENT_FAILED;
+  |Next.js (Frontend)|
+  :Thông báo lỗi / cho phép thử lại;\nKHÔNG xóa giỏ hàng;
+  stop
+else (Có)
+  :Payment SUCCESS; Order PAID;
 endif
 
 |Next.js (Frontend)|
