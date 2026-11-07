@@ -64,4 +64,12 @@ getOrderById(
   );
 }
 
+@Post(':id/cancel')
+cancelMyOrder(
+  @CurrentUser() user: AuthenticatedUser,
+  @Param('id', ParseIntPipe) orderId: number,
+) {
+  return this.ordersService.cancelMyOrder(user.userId, orderId);
+}
+
 }

@@ -1,4 +1,8 @@
 import { transitionOrderStatus } from './order-state-machine';
+import {
+  cancelOrderInTransaction,
+  CUSTOMER_CANCELLABLE_STATUSES,
+} from './order-cancellation';
 import { resolvePromotion } from './promotion-rule';
 import type { Prisma } from '@prisma/client';
 import {
@@ -398,6 +402,28 @@ async getOrderById(userId: number, orderId: number) {
   }
 
   return formatOrder(order);
+}
+
+async cancelMyOrder(userId: number, orderId: number) {
+  return this.prisma.$transaction(async (tx) => {
+    const order = await tx.order.findFirst({
+      where: {
+        id: orderId,
+        userId,
+        channel: OrderChannel.ONLINE,
+      },
+      select: { id: true },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return cancelOrderInTransaction(
+      tx,
+      orderId,
+      CUSTOMER_CANCELLABLE_STATUSES,
+    );
+  });
 }
 
 }

@@ -257,13 +257,17 @@ export type OrderHistoryItem = {
   items: OrderDetailItem[];
 };
 
-export async function fetchMyOrders(): Promise<OrderHistoryItem[]> {
-  return apiRequest<OrderHistoryItem[]>('/orders/me');
+export async function fetchMyOrders(): Promise<{ userId: number; orders: OrderHistoryItem[] }> {
+  return apiRequest<{ userId: number; orders: OrderHistoryItem[] }>('/orders/me');
 }
 
 export async function fetchOrderById(id: number | string): Promise<OrderHistoryItem> {
   return apiRequest<OrderHistoryItem>(`/orders/${id}`);
 }
+export const cancelMyOrder = (id: number) =>
+  apiRequest<{ id: number; status: string; refundRequired: boolean }>(`/orders/${id}/cancel`, {
+    method: 'POST',
+  });
 // Backoffice routes are always authorized by NestJS using the role in PostgreSQL.
 export type StaffOrder = {
   id: number;
@@ -334,6 +338,10 @@ export const fetchStaffOrders = () =>
 export const advanceStaffOrder = (id: number, status: string) =>
   apiRequest<{ id: number; status: string }>(`/management/staff/orders/${id}/status`, {
     method: 'PATCH', body: JSON.stringify({ status }),
+  });
+export const cancelStaffOrder = (id: number) =>
+  apiRequest<{ id: number; status: string; refundRequired: boolean }>(`/management/staff/orders/${id}/cancel`, {
+    method: 'POST',
   });
 export const fetchAdminOverview = () =>
   apiRequest<AdminOverview>('/management/admin/overview');

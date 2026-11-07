@@ -20,6 +20,8 @@ type TestOrder = {
   total: number;
   status: OrderStatus;
   loyaltyAwardedAt: Date | null;
+  items: Array<{ productId: number; qty: number }>;
+  payments: Array<{ amount: number; method: string }>;
 };
 
 describe('PaymentsService State Machine integration', () => {
@@ -78,15 +80,36 @@ describe('PaymentsService State Machine integration', () => {
       create: createPayment,
       update: updatePayment,
       updateMany: jest.fn(async (args: {
-        where: { id: number; status: PaymentStatus };
+        where: {
+          id?: number;
+          orderId?: number;
+          status: PaymentStatus;
+          expiresAt?: { lte: Date };
+        };
         data: { status: PaymentStatus };
       }) => {
-        const payment = [...payments.values()].find((item) => item.id === args.where.id);
-        if (!payment || payment.status !== args.where.status) return { count: 0 };
-        const updated = { ...payment, status: args.data.status };
-        payments.set(updated.idempotencyKey, updated);
-        return { count: 1 };
+        const matching = [...payments.values()].filter((item) =>
+          (args.where.id === undefined || item.id === args.where.id) &&
+          (args.where.orderId === undefined || item.orderId === args.where.orderId) &&
+          item.status === args.where.status &&
+          (!args.where.expiresAt || (item.expiresAt !== null && item.expiresAt <= args.where.expiresAt.lte)),
+        );
+        for (const payment of matching) {
+          payments.set(payment.idempotencyKey, {
+            ...payment,
+            status: args.data.status,
+          });
+        }
+        return { count: matching.length };
       }),
+    },
+    productIngredient: {
+      findMany: jest.fn(async () => [
+        { productId: 3, ingredientId: 4, quantity: 5 },
+      ]),
+    },
+    ingredient: {
+      updateMany: jest.fn(async () => ({ count: 1 })),
     },
     user: {
       updateMany: jest.fn(async () => ({ count: 1 })),
@@ -134,6 +157,8 @@ describe('PaymentsService State Machine integration', () => {
       total: 94000,
       status: OrderStatus.PENDING,
       loyaltyAwardedAt: null,
+      items: [{ productId: 3, qty: 1 }],
+      payments: [],
     };
 
     process.env.VNPAY_TMN_CODE = 'TESTCODE';

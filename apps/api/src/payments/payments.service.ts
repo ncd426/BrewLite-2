@@ -22,6 +22,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { transitionOrderStatus } from '../orders/order-state-machine';
 import {
+  cancelOrderInTransaction,
+  CUSTOMER_CANCELLABLE_STATUSES,
+} from '../orders/order-cancellation';
+import {
   createVnpayPaymentUrl,
   verifyVnpaySignature,
   type VnpayParams,
@@ -87,11 +91,12 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
           where: { id: payment.orderId },
           select: { status: true },
         });
-        if (
-          order?.status === OrderStatus.PENDING ||
-          order?.status === OrderStatus.PAYMENT_FAILED
-        ) {
-          await transitionOrderStatus(tx, payment.orderId, OrderStatus.CANCELLED);
+        if (order && CUSTOMER_CANCELLABLE_STATUSES.includes(order.status)) {
+          await cancelOrderInTransaction(
+            tx,
+            payment.orderId,
+            CUSTOMER_CANCELLABLE_STATUSES,
+          );
         }
       });
     }
@@ -247,11 +252,12 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       if (claimed.count !== 1) return 'duplicate';
 
       if (expired) {
-        if (
-          order.status === OrderStatus.PENDING ||
-          order.status === OrderStatus.PAYMENT_FAILED
-        ) {
-          await transitionOrderStatus(tx, payment.orderId, OrderStatus.CANCELLED);
+        if (CUSTOMER_CANCELLABLE_STATUSES.includes(order.status)) {
+          await cancelOrderInTransaction(
+            tx,
+            payment.orderId,
+            CUSTOMER_CANCELLABLE_STATUSES,
+          );
         }
         return 'expired';
       }
