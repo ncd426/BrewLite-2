@@ -28,6 +28,7 @@ describe('Backoffice HTTP role boundaries', () => {
     listStaffOrders: jest.fn<() => Promise<unknown[]>>(),
     listUsers: jest.fn<() => Promise<unknown[]>>(),
     advanceOrder: jest.fn<() => Promise<unknown>>(),
+    cancelOrder: jest.fn<() => Promise<unknown>>(),
   };
   let app: INestApplication;
   let jwt: JwtService;
@@ -59,6 +60,11 @@ describe('Backoffice HTTP role boundaries', () => {
     service.listStaffOrders.mockResolvedValue([]);
     service.listUsers.mockResolvedValue([]);
     service.advanceOrder.mockResolvedValue({ id: 9, status: OrderStatus.PREPARING });
+    service.cancelOrder.mockResolvedValue({
+      id: 9,
+      status: OrderStatus.CANCELLED,
+      refundRequired: true,
+    });
   });
   afterAll(async () => { await app.close(); });
 
@@ -91,6 +97,11 @@ describe('Backoffice HTTP role boundaries', () => {
       .set('Authorization', auth(2)).send({ status: 'PREPARING' }).expect(200);
     await request(app.getHttpServer()).patch('/management/staff/orders/9/status')
       .set('Authorization', auth(2)).send({ status: 'PAID' }).expect(400);
+    await request(app.getHttpServer())
+      .post('/management/staff/orders/9/cancel')
+      .set('Authorization', auth(2))
+      .expect(201);
+    expect(service.cancelOrder).toHaveBeenCalledWith(9);
   });
 
   it('allows ADMIN to use both Admin and Staff endpoints', async () => {
@@ -99,5 +110,8 @@ describe('Backoffice HTTP role boundaries', () => {
       .set('Authorization', auth(3)).expect(200);
     await request(app.getHttpServer()).get('/management/staff/orders')
       .set('Authorization', auth(3)).expect(200);
+    fakePrisma.user.findUnique.mockResolvedValue({ role: UserRole.CUSTOMER });
+    await request(app.getHttpServer()).post('/management/staff/orders/9/cancel')
+      .set('Authorization', auth(1)).expect(403);
   });
 });

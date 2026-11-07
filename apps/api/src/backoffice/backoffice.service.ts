@@ -9,6 +9,10 @@ import { OrderStatus, PaymentStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { transitionOrderStatus } from '../orders/order-state-machine';
 import {
+  cancelOrderInTransaction,
+  STAFF_CANCELLABLE_STATUSES,
+} from '../orders/order-cancellation';
+import {
   AdjustInventoryDto, CreateIngredientDto, CreateProductDto,
   RecipeLineDto, UpdateProductDto,
 } from './dto';
@@ -17,9 +21,9 @@ const staffTransitions: OrderStatus[] = [
   OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.COMPLETED,
 ];
 
-const activeStatuses: OrderStatus[] = [
+const staffVisibleStatuses: OrderStatus[] = [
   OrderStatus.PAID, OrderStatus.PREPARING,
-  OrderStatus.READY, OrderStatus.COMPLETED,
+  OrderStatus.READY, OrderStatus.COMPLETED, OrderStatus.CANCELLED,
 ];
 
 const productInclude = {
@@ -35,7 +39,7 @@ export class BackofficeService {
   // Staff sees operational order details, not customer passwords or credentials.
   listStaffOrders() {
     return this.prisma.order.findMany({
-      where: { status: { in: activeStatuses } },
+      where: { status: { in: staffVisibleStatuses } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 100,
       select: {
@@ -58,6 +62,12 @@ export class BackofficeService {
     }
     // The existing state machine validates every status transition atomically.
     return this.prisma.$transaction((tx) => transitionOrderStatus(tx, orderId, next));
+  }
+
+  cancelOrder(orderId: number) {
+    return this.prisma.$transaction((tx) =>
+      cancelOrderInTransaction(tx, orderId, STAFF_CANCELLABLE_STATUSES),
+    );
   }
 
   async overview() {

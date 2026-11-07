@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   fetchMyOrders,
+  cancelMyOrder,
   getAccessToken,
   LOYALTY_REDEMPTION_VND,
   OrderHistoryItem,
@@ -15,6 +16,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<number | null>(null);
 
 useEffect(() => {
     const token = getAccessToken();
@@ -24,16 +26,7 @@ useEffect(() => {
     }
 
     fetchMyOrders()
-      .then((res: any) => {
-        // Backend trả về dạng { userId: 1, orders: [...] } nên cần lấy res.orders
-        if (Array.isArray(res?.orders)) {
-          setOrders(res.orders);
-        } else if (Array.isArray(res)) {
-          setOrders(res);
-        } else {
-          setOrders([]);
-        }
-      })
+      .then((res) => setOrders(res.orders))
       .catch((err) => {
         setError(err.message || 'Không thể tải lịch sử đơn hàng');
       })
@@ -41,6 +34,21 @@ useEffect(() => {
         setLoading(false);
       });
   }, [router]);
+
+  const cancelOrder = async (orderId: number) => {
+    if (!window.confirm(`Bạn có chắc muốn hủy đơn #${orderId}?`)) return;
+    setCancelling(orderId);
+    setError(null);
+    try {
+      await cancelMyOrder(orderId);
+      const result = await fetchMyOrders();
+      setOrders(result.orders);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không thể hủy đơn hàng.');
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status.toUpperCase()) {
@@ -51,7 +59,7 @@ useEffect(() => {
         return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Đang chờ</span>;
       case 'PAYMENT_FAILED':
       case 'CANCELLED':
-        return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Thất bại</span>;
+        return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Đã hủy</span>;
       default:
         return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">{status}</span>;
     }
@@ -156,13 +164,21 @@ useEffect(() => {
                   </span>
                 </div>
                 {['PENDING', 'PAYMENT_FAILED'].includes(order.status) && (
-                  <div>
+                  <div className="flex flex-wrap gap-3">
                     <Link
                       href={`/checkout/qr?orderId=${orderCode}&method=VNPAY&points=0` as any}
                       className="rounded-lg bg-amber-600 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-700"
                     >
                       Thanh toán tiếp bằng VNPay QR
                     </Link>
+                    <button
+                      type="button"
+                      disabled={cancelling === orderCode}
+                      onClick={() => void cancelOrder(orderCode)}
+                      className="rounded-lg border border-red-300 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {cancelling === orderCode ? 'Đang hủy...' : 'Hủy đơn'}
+                    </button>
                   </div>
                 )}
               </div>

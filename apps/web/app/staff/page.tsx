@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { RoleGate } from '@/components/RoleGate';
-import { advanceStaffOrder, fetchStaffOrders, type StaffOrder } from '@/lib/api';
+import { advanceStaffOrder, cancelStaffOrder, fetchStaffOrders, type StaffOrder } from '@/lib/api';
 
 const label: Record<string, string> = {
   PAID: 'Chờ pha chế', PREPARING: 'Đang pha chế',
-  READY: 'Sẵn sàng giao', COMPLETED: 'Đã giao',
+  READY: 'Sẵn sàng giao', COMPLETED: 'Đã giao', CANCELLED: 'Đã hủy',
 };
 const next: Record<string, { status: string; text: string }> = {
   PAID: { status: 'PREPARING', text: 'Bắt đầu pha chế' },
@@ -20,6 +20,7 @@ function StaffContent() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [filter, setFilter] = useState('ACTIVE');
 
   const refresh = useCallback(async () => {
@@ -56,8 +57,35 @@ function StaffContent() {
     }
   };
 
+  const cancel = async (order: StaffOrder) => {
+    const confirmed = window.confirm(
+      `Hủy đơn #${order.id}? Nếu đơn đã thanh toán, cần hoàn tiền thủ công qua phương thức thanh toán.`,
+    );
+    if (!confirmed || busy !== null) return;
+    setBusy(order.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await cancelStaffOrder(order.id);
+      setNotice(
+        result.refundRequired
+          ? `Đã hủy đơn #${order.id}. Cần xử lý hoàn tiền thủ công.`
+          : `Đã hủy đơn #${order.id}.`,
+      );
+      await refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không thể hủy đơn.');
+      await refresh();
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const visible = orders.filter((order) =>
-    filter === 'ALL' || (filter === 'ACTIVE' ? order.status !== 'COMPLETED' : order.status === filter),
+    filter === 'ALL' ||
+    (filter === 'ACTIVE'
+      ? ['PAID', 'PREPARING', 'READY'].includes(order.status)
+      : order.status === filter),
   );
 
   return (
@@ -100,6 +128,7 @@ function StaffContent() {
       </div>
 
       {error && <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+      {notice && <p role="status" className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{notice}</p>}
       {loading && <p className="mt-8 text-sm text-slate-500">Đang tải danh sách đơn...</p>}
       {!loading && visible.length === 0 && <div className="mt-6 rounded-2xl border bg-white p-12 text-center text-slate-500">Không có đơn trong nhóm này.</div>}
 
@@ -129,14 +158,23 @@ function StaffContent() {
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
               <p className="font-bold text-amber-900">{order.total.toLocaleString('vi-VN')}đ</p>
-              {next[order.status] ? (
-                <button disabled={busy !== null} onClick={() => void advance(order)}
-                  className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800 disabled:opacity-50">
-                  {busy === order.id ? 'Đang cập nhật...' : next[order.status].text}
-                </button>
-              ) : (
-                <span className="text-sm font-semibold text-emerald-700">Đã hoàn tất</span>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {next[order.status] && (
+                  <button disabled={busy !== null} onClick={() => void advance(order)}
+                    className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800 disabled:opacity-50">
+                    {busy === order.id ? 'Đang cập nhật...' : next[order.status].text}
+                  </button>
+                )}
+                {order.status === 'PAID' && (
+                  <button disabled={busy !== null} onClick={() => void cancel(order)}
+                    className="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
+                    {busy === order.id ? 'Đang xử lý...' : 'Hủy đơn'}
+                  </button>
+                )}
+                {order.status === 'COMPLETED' && (
+                  <span className="text-sm font-semibold text-emerald-700">Đã hoàn tất</span>
+                )}
+              </div>
             </div>
           </article>
         ))}

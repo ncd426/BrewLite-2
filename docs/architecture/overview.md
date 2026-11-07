@@ -57,8 +57,10 @@ Order status is controlled by the API: `PENDING`, `PAID`, `PAYMENT_FAILED`, `PRE
 4. Web shows `/checkout/qr` (MOMO simulation) or `/checkout/confirm` (CARD simulation), then the **customer confirms**.
 5. Web sends `POST /payments` with `Idempotency-Key`; API verifies ownership, order amount/status and replay constraints. Payment runs **inside NestJS**, without a third-party gateway.
 6. On success, store `Payment=SUCCESS`, transition order to `PAID`, redeem/award loyalty once, and then the web removes paid items from cart and shows the success page. On failure, store `Payment=FAILED`, transition order to `PAYMENT_FAILED` and preserve the cart.
+7. Customers may cancel only their own unpaid online orders (`PENDING` or `PAYMENT_FAILED`). Staff may cancel an unpaid order or a paid order before preparation starts. A successful payment remains recorded; a paid cancellation requires a manual refund outside the application.
+8. A cancellation atomically transitions the order, fails any pending payment sessions, and restores the reserved required ingredients once. Payment expiry also cancels the order and restores its reservation.
 
-**Known limitation:** ingredient stock is reduced at order creation and is **not automatically restored** after payment failure in the reviewed checkout specification. This needs a product decision and recovery handling; it must not be silently represented as an implemented reversal.
+**Cancellation constraint:** inventory restoration uses the current required recipe for each order item. Paid-order refunds are not automated or verified against a payment provider; staff must handle them manually.
 
 **Route verification:** the checkout specification names `/checkout/success`; verify the current Next.js route before claiming the code uses the same URL.
 

@@ -34,4 +34,9 @@ export class StaffController {
   ) {
     return this.service.advanceOrder(id, dto.status);
   }
+
+  @Post('orders/:id/cancel')
+  cancelOrder(@Param('id', ParseIntPipe) id: number) {
+    return this.service.cancelOrder(id);
+  }
 }
