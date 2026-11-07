@@ -1,5 +1,10 @@
 # Local deployment and development
 
+Production hosting has not been selected or verified yet. The [deployment
+diagram](diagrams/deployment.svg) distinguishes the verified local Compose and
+GitHub Actions setup from production targets that still need an owner decision.
+Its editable source is [deployment.puml](diagrams/deployment.puml).
+
 ## Docker Compose
 
 From the repository root:
