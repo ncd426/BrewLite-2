@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120" style="width:100%;height:auto;max-width:1800px" role="img" aria-labelledby="title description">
+  <title id="title">Sơ đồ triển khai BrewLite</title>
+  <desc id="description">Sơ đồ chia ba ranh giới Local, CI và Production. Local Compose và GitHub Actions đã được xác minh; hạ tầng production vẫn chưa chọn.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#475569"/>
+    </marker>
+    <marker id="targetArrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#b45309"/>
+    </marker>
+    <style>
+      text { font-family: Arial, "Segoe UI", sans-serif; fill: #0f172a; }
+      .title { font-size: 28px; font-weight: 700; }
+      .subtitle { font-size: 14px; fill: #475569; }
+      .panel-title { font-size: 18px; font-weight: 700; }
+      .node-title { font-size: 15px; font-weight: 700; }
+      .body { font-size: 13px; fill: #334155; }
+      .small { font-size: 12px; fill: #475569; }
+      .local-panel { fill: #f0f9ff; stroke: #0284c7; stroke-width: 2; rx: 12; }
+      .ci-panel { fill: #f8fafc; stroke: #64748b; stroke-width: 2; rx: 12; }
+      .prod-panel { fill: #fffaf3; stroke: #d97706; stroke-width: 2; stroke-dasharray: 9 6; rx: 12; }
+      .node { fill: #ffffff; stroke: #64748b; stroke-width: 1.5; rx: 8; }
+      .note { fill: #fffbeb; stroke: #d97706; stroke-width: 1.3; rx: 8; }
+      .proposal-node { fill: #fffaf3; stroke: #b45309; stroke-width: 1.7; stroke-dasharray: 7 5; rx: 8; }
+      .flow { fill: none; stroke: #475569; stroke-width: 1.8; marker-end: url(#arrow); }
+      .target-flow { fill: none; stroke: #b45309; stroke-width: 1.8; stroke-dasharray: 7 5; marker-end: url(#targetArrow); }
+      .edge-label { font-size: 11px; font-weight: 600; fill: #475569; }
+      .target-label { font-size: 11px; font-weight: 600; fill: #92400e; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1120" fill="#ffffff"/>
+  <text x="40" y="46" class="title">BrewLite - Sơ đồ triển khai</text>
+  <text x="40" y="73" class="subtitle">Nền xanh/xám: đã xác minh trong repository. Nét đứt màu cam: mục tiêu production, chưa chốt hoặc chưa triển khai.</text>
+
+  <!-- Local boundary -->
+  <rect x="30" y="105" width="440" height="960" class="local-panel"/>
+  <text x="52" y="139" class="panel-title">LOCAL - Docker Compose</text>
+
+  <rect x="65" y="168" width="370" height="75" class="node"/>
+  <text x="250" y="198" text-anchor="middle" class="node-title">Người dùng / trình duyệt</text>
+  <text x="250" y="221" text-anchor="middle" class="body">PWA là mục tiêu, chưa xác minh</text>
+
+  <rect x="65" y="292" width="370" height="90" class="node"/>
+  <text x="250" y="324" text-anchor="middle" class="node-title">Frontend Next.js</text>
+  <text x="250" y="348" text-anchor="middle" class="body">apps/web - cổng 3000</text>
+  <text x="250" y="368" text-anchor="middle" class="small">HTTP localhost</text>
+
+  <rect x="65" y="430" width="370" height="108" class="node"/>
+  <text x="250" y="461" text-anchor="middle" class="node-title">API NestJS</text>
+  <text x="250" y="485" text-anchor="middle" class="body">apps/api - cổng 4000</text>
+  <text x="250" y="508" text-anchor="middle" class="small">Chạy migration trước khi phục vụ</text>
+
+  <rect x="65" y="586" width="370" height="122" class="node"/>
+  <text x="250" y="618" text-anchor="middle" class="node-title">PostgreSQL 16</text>
+  <text x="250" y="642" text-anchor="middle" class="body">Cổng host 5433</text>
+  <text x="250" y="666" text-anchor="middle" class="body">Volume bền vững: postgres_data</text>
+  <text x="250" y="689" text-anchor="middle" class="small">DB probe: pg_isready</text>
+
+  <rect x="65" y="762" width="175" height="90" class="node"/>
+  <text x="152" y="793" text-anchor="middle" class="node-title">Probe API</text>
+  <text x="152" y="818" text-anchor="middle" class="body">GET /products</text>
+  <text x="152" y="839" text-anchor="middle" class="small">Mỗi 10 giây</text>
+
+  <rect x="260" y="762" width="175" height="90" class="node"/>
+  <text x="347" y="793" text-anchor="middle" class="node-title">Log ứng dụng</text>
+  <text x="347" y="818" text-anchor="middle" class="body">stdout / stderr</text>
+  <text x="347" y="839" text-anchor="middle" class="small">Docker Compose logs</text>
+
+  <rect x="65" y="886" width="370" height="126" class="note"/>
+  <text x="84" y="916" class="node-title">Cấu hình và bí mật local</text>
+  <text x="84" y="941" class="body">.env và giá trị mẫu chỉ dùng local.</text>
+  <text x="84" y="964" class="body">Không dùng lại thông tin mẫu ở production.</text>
+  <text x="84" y="987" class="small">API chỉ khởi động sau khi DB khỏe.</text>
+
+  <path d="M250 243 V292" class="flow"/>
+  <text x="262" y="273" class="edge-label">HTTP</text>
+  <path d="M250 382 V430" class="flow"/>
+  <text x="262" y="413" class="edge-label">REST / JSON</text>
+  <path d="M250 538 V586" class="flow"/>
+  <text x="262" y="569" class="edge-label">Prisma / SQL</text>
+  <path d="M65 807 H48 V484 H65" class="flow"/>
+  <path d="M435 484 H455 V807 H435" class="flow"/>
+
+  <!-- CI boundary -->
+  <rect x="490" y="105" width="390" height="960" class="ci-panel"/>
+  <text x="512" y="139" class="panel-title">CI - GitHub Actions</text>
+
+  <rect x="522" y="184" width="326" height="92" class="node"/>
+  <text x="685" y="218" text-anchor="middle" class="node-title">GitHub repository</text>
+  <text x="685" y="244" text-anchor="middle" class="body">Push / pull request vào main</text>
+
+  <rect x="522" y="340" width="326" height="130" class="node"/>
+  <text x="685" y="373" text-anchor="middle" class="node-title">Job API</text>
+  <text x="685" y="399" text-anchor="middle" class="body">npm ci - Prisma generate</text>
+  <text x="685" y="423" text-anchor="middle" class="body">Build - Jest tests</text>
+  <text x="685" y="448" text-anchor="middle" class="small">.github/workflows/ci.yml</text>
+
+  <rect x="522" y="520" width="326" height="112" class="node"/>
+  <text x="685" y="553" text-anchor="middle" class="node-title">Job web</text>
+  <text x="685" y="579" text-anchor="middle" class="body">npm ci - Next.js build</text>
+  <text x="685" y="605" text-anchor="middle" class="small">Build production</text>
+
+  <rect x="522" y="682" width="326" height="180" class="note"/>
+  <text x="544" y="714" class="node-title">Chưa có trong workflow hiện tại</text>
+  <text x="544" y="744" class="body">- Không build hoặc gắn tag image.</text>
+  <text x="544" y="772" class="body">- Không push lên registry.</text>
+  <text x="544" y="800" class="body">- Không triển khai production.</text>
+  <text x="544" y="834" class="small">Giá trị CI không phải bí mật production.</text>
+
+  <path d="M685 276 V340" class="flow"/>
+  <rect x="522" y="900" width="326" height="112" class="proposal-node"/>
+  <text x="685" y="934" text-anchor="middle" class="node-title">Bước phát hành đề xuất</text>
+  <text x="685" y="960" text-anchor="middle" class="body">Build image - tag SHA</text>
+  <text x="685" y="985" text-anchor="middle" class="body">Push lên registry</text>
+
+  <!-- Production boundary -->
+  <rect x="900" y="105" width="870" height="960" class="prod-panel"/>
+  <text x="922" y="139" class="panel-title">PRODUCTION - mục tiêu, nhà cung cấp chưa chốt</text>
+
+  <rect x="930" y="178" width="235" height="84" class="node"/>
+  <text x="1047" y="211" text-anchor="middle" class="node-title">Khách hàng</text>
+  <text x="1047" y="237" text-anchor="middle" class="body">Trình duyệt / PWA mục tiêu</text>
+
+  <rect x="1270" y="178" width="250" height="84" class="node"/>
+  <text x="1395" y="211" text-anchor="middle" class="node-title">HTTPS ingress</text>
+  <text x="1395" y="237" text-anchor="middle" class="body">TLS và định tuyến - TBD</text>
+
+  <rect x="930" y="342" width="310" height="105" class="node"/>
+  <text x="1085" y="375" text-anchor="middle" class="node-title">Frontend / CDN</text>
+  <text x="1085" y="401" text-anchor="middle" class="body">Next.js runtime / cache</text>
+  <text x="1085" y="425" text-anchor="middle" class="small">Nhà cung cấp chưa chốt</text>
+
+  <rect x="1290" y="342" width="400" height="105" class="node"/>
+  <text x="1490" y="375" text-anchor="middle" class="node-title">API NestJS</text>
+  <text x="1490" y="401" text-anchor="middle" class="body">Container - nhà cung cấp chưa chốt</text>
+  <text x="1490" y="425" text-anchor="middle" class="small">Thanh toán mô phỏng chạy bên trong API</text>
+
+  <rect x="1290" y="515" width="400" height="114" class="node"/>
+  <text x="1490" y="548" text-anchor="middle" class="node-title">PostgreSQL managed</text>
+  <text x="1490" y="574" text-anchor="middle" class="body">Lưu trữ bền vững và sao lưu - TBD</text>
+  <text x="1490" y="600" text-anchor="middle" class="small">Kết nối riêng từ API - TBD</text>
+
+  <rect x="930" y="515" width="310" height="114" class="node"/>
+  <text x="1085" y="548" text-anchor="middle" class="node-title">Container registry</text>
+  <text x="1085" y="574" text-anchor="middle" class="body">Nhà cung cấp chưa chốt</text>
+  <text x="1085" y="600" text-anchor="middle" class="small">Tag image theo commit SHA</text>
+
+  <rect x="930" y="697" width="230" height="108" class="node"/>
+  <text x="1045" y="730" text-anchor="middle" class="node-title">Quản lý secrets</text>
+  <text x="1045" y="756" text-anchor="middle" class="body">Từ môi trường riêng</text>
+  <text x="1045" y="780" text-anchor="middle" class="small">Tiêm vào khi chạy - TBD</text>
+
+  <rect x="1190" y="697" width="230" height="108" class="node"/>
+  <text x="1305" y="730" text-anchor="middle" class="node-title">Health / readiness</text>
+  <text x="1305" y="756" text-anchor="middle" class="body">Đường dẫn probe - TBD</text>
+  <text x="1305" y="780" text-anchor="middle" class="small">Chưa xác minh endpoint</text>
+
+  <rect x="1450" y="697" width="240" height="108" class="node"/>
+  <text x="1570" y="730" text-anchor="middle" class="node-title">Logs nền tảng</text>
+  <text x="1570" y="756" text-anchor="middle" class="body">Thu thập / lưu giữ - TBD</text>
+  <text x="1570" y="780" text-anchor="middle" class="small">Chưa xác minh</text>
+
+  <rect x="930" y="858" width="760" height="132" class="note"/>
+  <text x="954" y="891" class="node-title">Các điểm production chưa được xác minh</text>
+  <text x="954" y="920" class="body">Chưa chọn hosting, registry, PostgreSQL, HTTPS hoặc quy trình triển khai.</text>
+  <text x="954" y="948" class="body">PWA installability và health endpoint production chưa được kiểm chứng.</text>
+  <text x="954" y="976" class="small">Thanh toán MVP là mô phỏng nội bộ; không kết nối cổng thanh toán bên ngoài.</text>
+
+  <path d="M1165 220 H1270" class="target-flow"/>
+  <text x="1180" y="207" class="target-label">HTTPS</text>
+  <path d="M1340 262 V306 H1085 V342" class="target-flow"/>
+  <text x="1155" y="298" class="target-label">HTTPS web</text>
+  <path d="M1450 262 V342" class="target-flow"/>
+  <text x="1463" y="307" class="target-label">HTTPS API</text>
+  <path d="M1240 394 H1290" class="target-flow"/>
+  <text x="1245" y="381" class="target-label">REST / JSON</text>
+  <path d="M1490 447 V515" class="target-flow"/>
+  <text x="1503" y="486" class="target-label">Kết nối riêng / TLS</text>
+  <path d="M1160 751 H1175 V650 H1725 V440 H1690" class="target-flow"/>
+  <text x="1375" y="640" class="target-label">Secrets lúc chạy</text>
+  <path d="M1305 805 V830 H1740 V370 H1690" class="target-flow"/>
+  <text x="1725" y="850" text-anchor="end" class="target-label">Probe TBD</text>
+  <path d="M1670 447 V470 H1735 V750 H1690" class="target-flow"/>
+  <text x="1725" y="684" text-anchor="end" class="target-label">stdout / stderr</text>
+  <path d="M930 567 H915 V315 H930 V394" class="target-flow"/>
+  <text x="920" y="302" class="target-label">Deploy</text>
+  <path d="M1240 567 H1260 V326 H1290 V342" class="target-flow"/>
+  <text x="1257" y="315" class="target-label">Deploy</text>
+
+  <!-- Proposed future CI to registry connection; not implemented. -->
+  <path d="M848 956 H885 V492 H1085 V515" class="target-flow"/>
+  <text x="900" y="482" class="target-label">Build / push đề xuất</text>
+
+  <line x1="46" y1="1091" x2="95" y2="1091" class="flow"/>
+  <text x="106" y="1096" class="small">Luồng đã xác minh</text>
+  <line x1="275" y1="1091" x2="324" y2="1091" class="target-flow"/>
+  <text x="335" y="1096" class="small">Luồng production mục tiêu / chưa chốt</text>
+</svg>

@@ -80,6 +80,8 @@ Order status is controlled by the API: `PENDING`, `PAID`, `PAYMENT_FAILED`, `PRE
 
 The assignment requests mobile-first/PWA and a production-accessible HTTPS deployment. These are **acceptance targets**, not evidence of a completed production deployment. Record the real host, registry, service topology and probes after A2-14/A2-15 have selected and verified them.
 
+The [deployment diagram](../diagrams/deployment.svg) separates the verified local/CI setup from production targets that still need a hosting decision. Its editable source is [deployment.puml](../diagrams/deployment.puml).
+
 ## 6. Decision trade-offs
 
 | Decision | Benefit | Cost / limitation | Reference |

@@ -1,0 +1,96 @@
+@startuml deployment
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 35
+skinparam ranksep 45
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam ArrowColor #475569
+skinparam PackageBorderColor #64748B
+skinparam PackageFontColor #0F172A
+skinparam ComponentBorderColor #475569
+skinparam ComponentBackgroundColor #FFFFFF
+skinparam DatabaseBorderColor #475569
+skinparam DatabaseBackgroundColor #EFF6FF
+skinparam NoteBackgroundColor #FEF3C7
+skinparam NoteBorderColor #D97706
+
+title BrewLite - Sơ đồ triển khai
+subtitle Nền xanh: đã xác minh | Nét đứt màu cam: mục tiêu production chưa chốt
+
+package "LOCAL - Docker Compose (đã xác minh)" as Local #E0F2FE {
+  actor "Người dùng / trình duyệt\nPWA chưa xác minh" as LocalUser
+  component "Frontend Next.js\napps/web - cổng 3000" as LocalWeb
+  component "API NestJS\napps/api - cổng 4000\nChạy migration trước khi phục vụ" as LocalApi
+  database "PostgreSQL 16\nCổng host 5433\nVolume postgres_data\nHealth check: pg_isready" as LocalDb
+  component "Probe API\nGET /products" as LocalApiHealth
+  component "Log ứng dụng\nDocker Compose stdout / stderr" as LocalLogs
+  component "Cấu hình local\n.env và giá trị mẫu" as LocalEnv
+
+  LocalUser --> LocalWeb : HTTP localhost:3000
+  LocalWeb --> LocalApi : REST / JSON
+  LocalApi --> LocalDb : Prisma / SQL
+  LocalApiHealth ..> LocalApi : mỗi 10 giây
+  LocalApi ..> LocalLogs : stdout / stderr
+  LocalEnv --> LocalApi : biến môi trường
+}
+
+package "CI - GitHub Actions (đã xác minh)" as CI #F1F5F9 {
+  component "GitHub repository\nPush / pull request" as Source
+  component "Job API\nnpm ci - Prisma generate\nBuild - Jest tests" as ApiJob
+  component "Job web\nnpm ci - Next.js build" as WebJob
+  component "Bước phát hành đề xuất\nBuild image - gắn tag SHA - push registry" as Release #FFFBEB
+  note bottom of CI
+    Workflow hiện tại không build image,
+    không push registry và không deploy.
+    Giá trị CI không phải production secret.
+  end note
+
+  Source --> ApiJob
+  Source --> WebJob
+}
+
+package "PRODUCTION - mục tiêu, nhà cung cấp chưa chốt" as Prod #FFF7ED {
+  actor "Khách hàng\nTrình duyệt / PWA mục tiêu" as ProdUser
+  component "HTTPS ingress\nTLS và định tuyến\nNhà cung cấp TBD" as Ingress
+  component "Frontend / CDN\nNext.js runtime\nNhà cung cấp TBD" as ProdWeb
+  component "API NestJS\nContainer image\nNhà cung cấp TBD" as ProdApi
+  database "PostgreSQL được quản lý\nLưu trữ bền vững và sao lưu\nTruy cập riêng - TBD" as ProdDb
+  component "Container registry\nNhà cung cấp TBD\nTag image theo commit SHA" as Registry
+  component "Quản lý secrets\nTiêm vào lúc chạy" as Secrets
+  component "Health / readiness\nĐường dẫn và probe TBD" as ProdHealth
+  component "Logs nền tảng\nThu thập và lưu trữ TBD" as ProdLogs
+  note bottom of Prod
+    Chưa chốt hosting, registry, database, HTTPS hay quy trình deploy.
+    Khả năng cài đặt PWA và health endpoint production chưa được xác minh.
+    Thanh toán mô phỏng chạy trong API; không gọi cổng thanh toán bên ngoài.
+  end note
+
+  ProdUser .[#D97706].> Ingress : HTTPS
+  Ingress .[#D97706].> ProdWeb
+  Ingress .[#D97706].> ProdApi
+  ProdWeb .[#D97706].> ProdApi : REST / JSON qua HTTPS
+  ProdApi .[#D97706].> ProdDb : Kết nối riêng / TLS
+  Secrets .[#D97706].> ProdApi : cấu hình runtime
+  ProdHealth .[#D97706].> ProdApi : probe chưa chốt
+  ProdApi .[#D97706].> ProdLogs : stdout / stderr
+  Registry .[#D97706].> ProdWeb : triển khai image mục tiêu
+  Registry .[#D97706].> ProdApi : triển khai image mục tiêu
+}
+
+LocalUser -[hidden]down-> LocalWeb
+LocalWeb -[hidden]down-> LocalApi
+LocalApi -[hidden]down-> LocalDb
+ApiJob -[hidden]down-> WebJob
+ProdUser -[hidden]down-> Ingress
+Ingress -[hidden]down-> ProdWeb
+ProdWeb -[hidden]down-> ProdApi
+ProdApi -[hidden]down-> ProdDb
+Local -[hidden]right-> CI
+CI -[hidden]right-> Prod
+
+' Đường nối đề xuất, chưa có trong workflow CI hiện tại.
+Release .[#D97706,norank].> Registry : build / push đề xuất
+@enduml
