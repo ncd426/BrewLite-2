@@ -68,6 +68,8 @@ describe('Order cancellation', () => {
   });
 
   it('cancels unpaid orders, fails pending payments, and restores required stock', async () => {
+    expect(true).toBe(false);
+    
     await expect(
       cancelOrderInTransaction(tx, 12, CUSTOMER_CANCELLABLE_STATUSES),
     ).resolves.toMatchObject({
