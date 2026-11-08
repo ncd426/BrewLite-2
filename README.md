@@ -16,7 +16,7 @@ PostgreSQL. Prisma quản lý schema, migration và dữ liệu mẫu.
 - Đăng ký, đăng nhập, xem hồ sơ và lịch sử đơn hàng.
 - Áp dụng mã khuyến mãi theo điều kiện, xem trước tiền giảm ngay tại Checkout.
 - Tích và sử dụng điểm thưởng: 1 điểm đổi 1.000đ; mỗi 10.000đ thực trả được 1 điểm sau khi đơn PAID.
-- Mô phỏng thanh toán Ví điện tử (QR mở trang xác nhận BrewLite) hoặc Thẻ; không xử lý tiền hay dữ liệu thẻ thật.
+- Checkout online qua VNPay Sandbox bằng QR/link; chỉ xác nhận thanh toán sau khi API kiểm tra IPN hợp lệ. Bán hàng tại quầy sử dụng xác nhận CASH/CARD mô phỏng.
 - Xác nhận đơn hàng, lịch sử mua hàng và số tiền thực trả.
 - Order State Machine, Idempotency-Key, đặt đồng thời không vượt tồn kho (transaction + optimistic locking).
 
@@ -65,6 +65,12 @@ dữ liệu local.
 | `NEXT_PUBLIC_API_URL` | `http://localhost:4000` | URL API frontend gọi tới; được nhúng vào frontend lúc build. |
 | `API_PORT` | `4000` | Cổng API trên máy host. |
 | `WEB_PORT` | `3000` | Cổng web trên máy host. |
+| `PAYMENT_TTL_MINUTES` | `15` | Thời hạn phiên thanh toán (phút). |
+| `PAYMENT_API_PUBLIC_URL` | URL mẫu | URL API công khai để VNPay truy cập callback; cần HTTPS khi dùng sandbox. |
+| `PAYMENT_WEB_PUBLIC_URL` | `http://localhost:3000` | URL web dùng để quay lại sau thanh toán. |
+| `VNPAY_TMN_CODE` | Để trống | Mã merchant VNPay Sandbox, cấu hình riêng ở `.env`. |
+| `VNPAY_HASH_SECRET` | Để trống | Khóa ký VNPay Sandbox, không commit lên Git. |
+| `VNPAY_PAY_URL` | Sandbox URL | URL cổng thanh toán VNPay Sandbox. |
 
 Các giá trị mẫu chỉ dành cho phát triển local; không sử dụng nguyên trạng ở
 môi trường production. Seed từ chối chạy khi `NODE_ENV=production`.
@@ -85,13 +91,14 @@ header `Authorization: Bearer <accessToken>`.
 | `POST` | `/orders/promotion-preview` | Có | Xem trước khuyến mãi với `items`, `promotionCode`; không tạo đơn, không giữ/trừ tồn kho. |
 | `GET` | `/orders/me` | Có | Lịch sử đơn hàng của người dùng hiện tại. |
 | `GET` | `/orders/:id` | Có | Chi tiết đơn thuộc người dùng hiện tại. |
-| `POST` | `/payments` | Có | Mô phỏng thanh toán cho đơn hàng. |
+| `POST` | `/payments` | Có | Tạo phiên thanh toán VNPay Sandbox, trả `checkoutUrl` để khách mở cổng thanh toán. |
+| `GET` | `/payments/webhooks/vnpay` | Không dùng JWT; kiểm tra chữ ký IPN | Nhận và xác thực phản hồi VNPay trước khi cập nhật trạng thái thanh toán. |
 
-Thanh toán yêu cầu header `Idempotency-Key` và body gồm `orderId`, `method`
-(`MOMO` hoặc `CARD`). Có thể gửi `pointsToRedeem` (số điểm nguyên không âm).
-Trong môi trường phát triển, `simulateFailure: true` giúp thử luồng thất bại.
-Backend tự xác thực quyền sở hữu đơn, số tiền, số dư điểm và chống xử lý lại
-cùng key.
+Thanh toán online yêu cầu header `Idempotency-Key` và body gồm `orderId`,
+`method: "VNPAY"`; có thể gửi `pointsToRedeem` (số điểm nguyên không âm).
+`POST /payments` tạo phiên VNPay Sandbox chứ không đánh dấu đơn `PAID` ngay.
+Chỉ IPN hợp lệ (đúng chữ ký, số tiền, mã giao dịch) mới được xử lý kết quả.
+Backend kiểm tra JWT, quyền sở hữu, số tiền và chống tạo phiên trùng khi gửi lại key.
 
 ### Quy tắc số tiền trong database
 
@@ -107,17 +114,16 @@ Ví dụ: tiền hàng 39.000đ, giảm mã 10% = 3.900đ, đổi 10 điểm = 1
 `Order.total` = 35.100đ, `Payment.amount` = 25.100đ. Đây là **thiết kế
 có chủ đích**, không phải chênh lệch sai.
 
-### Giới hạn của mô phỏng thanh toán
+### Giới hạn của VNPay Sandbox
 
-- Ví điện tử tạo QR **dẫn đến trang `/checkout/confirm` của BrewLite**; QR không
-  phải QR chuyển khoản của MoMo/VNPay/ZaloPay. Người dùng phải đăng nhập cùng
-  tài khoản tạo đơn rồi bấm xác nhận. Thẻ cũng dùng màn hình xác nhận mô phỏng;
-  không thu thập số thẻ/CVV và không chuyển tiền thật.
-- Ở môi trường local, QR hoặc đường dẫn `localhost` mở được ngay trên **cùng
-  máy**. Muốn quét bằng điện thoại hoặc dùng mạng khác phải triển khai HTTPS
-  công khai/cấu hình mạng phù hợp; **MVP không yêu cầu chức năng này**.
-- Luồng mô phỏng chỉ phù hợp trình diễn/kiểm thử. Không sử dụng để nhận tiền
-  thật; một cổng thanh toán thực tế cần xác thực giao dịch từ nhà cung cấp.
+- Trang `/checkout/qr` hiển thị QR/link tới URL thanh toán VNPay Sandbox. Kết quả
+  chỉ được cập nhật sau khi API nhận và xác thực IPN từ VNPay; trình duyệt quay về
+  trang checkout không tự động chứng minh giao dịch thành công.
+- Cần cấu hình `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` và URL API công khai có HTTPS
+  để VNPay gọi webhook. URL `localhost` không nhận được IPN từ Internet nếu
+  chưa cấu hình tunnel/callback thích hợp.
+- VNPay Sandbox chỉ dùng để thử nghiệm, không chuyển tiền thật. Bán tại quầy
+  có luồng xác nhận CASH/CARD mô phỏng riêng, không gọi VNPay.
 
 
 ## Tài khoản demo
@@ -273,6 +279,7 @@ tra bằng các HTTP/DB integration test riêng và demo thủ công.
 ### Đối chiếu yêu cầu bàn giao
 
 Đồ án sử dụng NestJS, Next.js, PostgreSQL/Prisma, Docker Compose và Git. Phạm
-vi MVP có thanh toán **mô phỏng**. Sau khi build và test, nhóm cần tạo Pull
+vi MVP có checkout online qua **VNPay Sandbox** và bán tại quầy dùng xác
+nhận mô phỏng. Sau khi build và test, nhóm cần tạo Pull
 Request, review/merge và chuẩn bị Sprint Review/Retrospective theo quy trình
 Scrum; các bước quy trình này không được tự động hoàn thành bởi việc test PASS.
