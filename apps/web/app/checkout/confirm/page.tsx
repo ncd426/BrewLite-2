@@ -199,7 +199,7 @@ function ConfirmContent() {
         )}
       </div>
       <p className="mt-4 text-center text-xs text-gray-500">
-        'Chỉ phản hồi IPN có chữ ký hợp lệ mới xác nhận thanh toán; chuyển hướng trình duyệt không đủ.'
+        &apos;Chỉ phản hồi IPN có chữ ký hợp lệ mới xác nhận thanh toán; chuyển hướng trình duyệt không đủ.&apos;
       </p>
     </main>
   );
