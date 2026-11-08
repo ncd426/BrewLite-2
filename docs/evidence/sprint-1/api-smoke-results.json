@@ -1,0 +1,98 @@
+﻿{
+    "capturedAt":  "2026-11-07T11:51:09.3015522+07:00",
+    "baseUrl":  "http://localhost:4000",
+    "listCount":  8,
+    "availableCount":  8,
+    "outOfStockCount":  0,
+    "products":  {
+                     "value":  [
+                                   {
+                                       "id":  1,
+                                       "name":  "Cappuccino",
+                                       "price":  39000,
+                                       "imageUrl":  "/images/cappuccino.jpg",
+                                       "inStock":  true
+                                   },
+                                   {
+                                       "id":  2,
+                                       "name":  "Cà phê Phin",
+                                       "price":  25000,
+                                       "imageUrl":  "/images/ca_phe_phin.jpg",
+                                       "inStock":  true
+                                   },
+                                   {
+                                       "id":  3,
+                                       "name":  "Bạc Xỉu Sài Gòn",
+                                       "price":  32000,
+                                       "imageUrl":  "/images/bac_xiu_sai_gon.jpg",
+                                       "inStock":  true
+                                   },
+                                   {
+                                       "id":  4,
+                                       "name":  "Cà phê Đen Đá",
+                                       "price":  25000,
+                                       "imageUrl":  "/images/ca_phe_den_da.jpg",
+                                       "inStock":  true
+                                   },
+                                   {
+                                       "id":  5,
+                                       "name":  "Trà Đào Cam Sả",
+                                       "price":  38000,
+                                       "imageUrl":  "/images/tra_dao_cam_sa.jpg",
+                                       "inStock":  true
+                                   },
+                                   {
+                                       "id":  6,
+                                       "name":  "Matcha Latte",
+                                       "price":  45000,
+                                       "imageUrl":  "/images/matcha_latte.jpg",
+                                       "inStock":  true
+                                   },
+                                   {
+                                       "id":  7,
+                                       "name":  "Cà Phê Muối BrewLite",
+                                       "price":  35000,
+                                       "imageUrl":  "/images/ca_phe_muoi_brewlite.jpg",
+                                       "inStock":  true
+                                   },
+                                   {
+                                       "id":  8,
+                                       "name":  "Cold Brew Cam Vàng BrewLite",
+                                       "price":  45000,
+                                       "imageUrl":  "/images/cold_brew_cam_vang_brewlite.jpg",
+                                       "inStock":  true
+                                   }
+                               ],
+                     "Count":  8
+                 },
+    "detailProduct1":  {
+                           "id":  1,
+                           "name":  "Cappuccino",
+                           "price":  39000,
+                           "imageUrl":  "/images/cappuccino.jpg",
+                           "inStock":  true
+                       },
+    "unknownProductStatus":  404,
+    "invalidIdStatus":  400,
+    "menuPageStatus":  200,
+    "sampleImages":  [
+                         {
+                             "path":  "/images/cappuccino.jpg",
+                             "status":  200,
+                             "contentType":  "image/jpeg",
+                             "bytes":  19617
+                         },
+                         {
+                             "path":  "/images/ca_phe_phin.jpg",
+                             "status":  200,
+                             "contentType":  "image/jpeg",
+                             "bytes":  18511
+                         },
+                         {
+                             "path":  "/images/tra_dao_cam_sa.jpg",
+                             "status":  200,
+                             "contentType":  "image/jpeg",
+                             "bytes":  27937
+                         }
+                     ]
+}

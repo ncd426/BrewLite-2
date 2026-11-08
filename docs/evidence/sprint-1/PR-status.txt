@@ -1,0 +1,6 @@
+﻿PR Sprint 1 status: NOT CREATED / NOT FOUND
+Checked GitHub repository: ncd426/BrewLite-2
+Searches: "Sprint 1" and "products menu seed"
+Result: no matching Sprint 1 pull request found.
+PR #41 is an open deployment-diagram PR and is unrelated.
+This evidence archive does not create a PR.
