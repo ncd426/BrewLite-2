@@ -6,9 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   api:
+    name: api
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: apps/api
@@ -22,18 +27,27 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/api/package-lock.json
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm run build
-      - run: npm test -- --runInBand
+      - name: Install API dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Lint API
+        run: npm run lint
+      - name: Run API unit tests
+        run: npm test -- --runInBand
+      - name: Build API
+        run: npm run build
 
   web:
+    name: web
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: apps/web
     env:
       NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,5 +55,9 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
-      - run: npm ci
-      - run: npm run build
+      - name: Install web dependencies
+        run: npm ci
+      - name: Lint web
+        run: npm run lint
+      - name: Build web
+        run: npm run build
