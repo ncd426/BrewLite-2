@@ -9,9 +9,12 @@ dist/
 # Environment
 .env
 .env.local
+apps/api/.env.test
 
 # Logs
 *.log
+!docs/evidence/sprint-1/unit-integration-tests.log
+!docs/evidence/sprint-1/e2e-order-flow.log
 
 # IDE / AI Tools
 .claude/

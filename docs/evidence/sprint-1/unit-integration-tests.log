@@ -1,0 +1,26 @@
+﻿
+> backend@0.0.1 test:isolated
+> node prisma/run-isolated-tests.mjs unit
+
+node.exe : (node:21864) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:21864) Ex...nge at any time:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21864) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 listening listeners added to 
+[Server]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(node:21864) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 error listeners added to 
+[Server]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(node:21864) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added to 
+[Server]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+
+Test Suites: 6 skipped, 19 passed, 19 of 25 total
+Tests:       18 skipped, 132 passed, 150 total
+Snapshots:   0 total
+Time:        42.761 s
+Ran all test suites.
+
+EXIT_CODE=0
