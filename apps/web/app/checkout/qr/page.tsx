@@ -35,12 +35,15 @@ function QrPaymentContent() {
   const method: CheckoutPaymentMethod | null = query.get('method') === 'VNPAY'
     ? 'VNPAY'
     : null;
+  // VNPay browser redirects are NOT payment confirmations. Wait for verified IPN.
+  const returningFromVnpay = query.has('vnp_ResponseCode') || query.has('vnp_TransactionStatus');
 
   const removeItems = useCartStore((state) => state.removeItems);
   const [order, setOrder] = useState<OrderHistoryItem | null>(null);
   const [payment, setPayment] = useState<PaymentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
+  const [retrying, setRetrying] = useState(false);
   const paymentStartedFor = useRef<string | null>(null);
 
   useEffect(() => {
@@ -69,14 +72,20 @@ function QrPaymentContent() {
           return;
         }
 
-        if (!['PENDING', 'PAYMENT_FAILED'].includes(current.status)) return;
+        if (current.status === 'PAYMENT_FAILED') {
+          // A failed IPN must not silently start another payment.
+          setPayment(null);
+          return;
+        }
+        // After returning from VNPay, wait for IPN; do not create a second session.
+        if (current.status !== 'PENDING' || returningFromVnpay) return;
 
         const intentKey = `${orderId}:${method}:${points}`;
         if (paymentStartedFor.current !== intentKey) {
           paymentStartedFor.current = intentKey;
           const storageKey = `brewlite-payment:${intentKey}`;
           let idempotencyKey = window.sessionStorage.getItem(storageKey);
-          if (!idempotencyKey || current.status === 'PAYMENT_FAILED') {
+          if (!idempotencyKey) {
             idempotencyKey = crypto.randomUUID();
             window.sessionStorage.setItem(storageKey, idempotencyKey);
           }
@@ -104,7 +113,7 @@ function QrPaymentContent() {
       mounted = false;
       window.clearInterval(timer);
     };
-  }, [orderId, points, method, router]);
+  }, [orderId, points, method, returningFromVnpay, router]);
 
   const qrImage = payment?.checkoutUrl
     ? `https://api.qrserver.com/v1/create-qr-code/?size=280x280&ecc=M&data=${encodeURIComponent(payment.checkoutUrl)}`
@@ -119,6 +128,28 @@ function QrPaymentContent() {
     }
     removeItems(cartKeys.split('|').filter(Boolean));
     window.sessionStorage.removeItem(storageKey);
+  };
+
+  const retryPayment = async () => {
+    if (retrying || order?.status !== 'PAYMENT_FAILED' || orderId === null || points === null || method === null) return;
+    setRetrying(true);
+    setError(null);
+    const intentKey = `${orderId}:${method}:${points}`;
+    const storageKey = `brewlite-payment:${intentKey}`;
+    // Only an explicit click starts a NEW attempt with a NEW idempotency key.
+    const idempotencyKey = crypto.randomUUID();
+    window.sessionStorage.setItem(storageKey, idempotencyKey);
+    paymentStartedFor.current = intentKey;
+    try {
+      const created = await processPayment({ orderId, method, pointsToRedeem: points }, idempotencyKey);
+      setPayment(created);
+      setOrder(await fetchOrderById(orderId));
+    } catch (cause) {
+      paymentStartedFor.current = null;
+      setError(cause instanceof Error ? cause.message : 'Không thể tạo phiên thanh toán mới.');
+    } finally {
+      setRetrying(false);
+    }
   };
 
   return (
@@ -159,7 +190,7 @@ function QrPaymentContent() {
           </p>
         )}
 
-        {order && ['PENDING', 'PAYMENT_FAILED'].includes(order.status) && pointsDiscount <= order.total && (
+        {order?.status === 'PENDING' && pointsDiscount <= order.total && (
           <div className="mt-6 flex flex-col items-center gap-4">
             {qrImage && (
               <img
@@ -175,24 +206,31 @@ function QrPaymentContent() {
               <a href={payment.checkoutUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-amber-700 underline">
                 Mở cổng thanh toán trên thiết bị này
               </a>
-            ) : <p className="text-sm text-gray-500">Đang tạo phiên thanh toán an toàn...</p>}
+            ) : (
+              <p className="text-center text-sm text-gray-500">
+                {returningFromVnpay
+                  ? 'Đang chờ VNPay xác nhận giao dịch qua IPN. Trang này không tự tạo lần thanh toán khác.'
+                  : 'Đang tạo phiên thanh toán an toàn...'}
+              </p>
+            )}
             <p className="text-xs text-gray-500">Trang này kiểm tra trạng thái đơn mỗi 3 giây.</p>
           </div>
         )}
 
         {order?.status === 'CANCELLED' && <p className="mt-5 rounded-lg bg-red-50 p-3 text-center text-sm text-red-700">Mã QR đã hết hạn và đơn hàng đã bị hủy. Vui lòng đặt lại đơn hàng.</p>}
         {order?.status === 'PAYMENT_FAILED' && (
-          <button
-            type="button"
-            onClick={() => {
-              paymentStartedFor.current = null;
-              setPayment(null);
-              setError(null);
-            }}
-            className="mt-5 w-full rounded-lg bg-amber-700 px-4 py-3 font-semibold text-white hover:bg-amber-800"
-          >
-            Tạo phiên thanh toán mới
-          </button>
+          <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <p className="font-semibold">Thanh toán đã bị hủy hoặc thất bại.</p>
+            <p className="mt-1">Đơn hàng chưa được thanh toán. Bạn có thể chủ động thử lại.</p>
+            <button
+              type="button"
+              onClick={() => void retryPayment()}
+              disabled={retrying}
+              className="mt-4 w-full rounded-lg bg-amber-700 px-4 py-3 font-semibold text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {retrying ? 'Đang tạo phiên mới...' : 'Thử thanh toán lại'}
+            </button>
+          </div>
         )}
       </div>
     </main>
