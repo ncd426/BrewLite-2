@@ -58,6 +58,7 @@ useEffect(() => {
       case 'PENDING':
         return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Đang chờ</span>;
       case 'PAYMENT_FAILED':
+        return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Thanh toán thất bại</span>;
       case 'CANCELLED':
         return <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Đã hủy</span>;
       default:
