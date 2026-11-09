@@ -21,7 +21,9 @@
     "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch",
     "test:cov": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
     "test:debug": "node --inspect-brk --experimental-vm-modules -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ../../tests/e2e/jest-e2e.json"
+    "test:db:setup": "node prisma/test-db.mjs",
+    "test:isolated": "node prisma/run-isolated-tests.mjs unit",
+    "test:e2e": "node prisma/run-isolated-tests.mjs e2e tests/e2e/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
