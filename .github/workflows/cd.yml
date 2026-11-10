@@ -1,8 +1,8 @@
 name: CD - Package images (A2-25)
 
-# The production deploy adapter is deliberately not configured until A2-26
-# selects and verifies a hosting platform. A successful image publish is NOT
-# evidence of a successful production deployment.
+# API image can be published before a production API URL exists (bootstrap).
+# Web image embeds the API URL at build time and therefore remains gated.
+# Publishing images is NOT proof of a production deployment.
 on:
   push:
     branches: [main]
@@ -112,16 +112,16 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             echo "PR build validation only; registry publishing is disabled on pull requests." >> "$GITHUB_STEP_SUMMARY"
           elif [ -z "$PROD_API_PUBLIC_URL" ]; then
-            echo '::warning::A2-25: PROD_API_PUBLIC_URL is not set. GHCR publish is skipped. Configure it only after A2-26 chooses a public HTTPS API origin.'
-            echo 'Image publish: NOT VERIFIED (production API origin missing).' >> "$GITHUB_STEP_SUMMARY"
+            echo '::notice::A2-25: API image will publish to GHCR. Web image waits for PROD_API_PUBLIC_URL.'
+            echo 'API image: publication enabled; Web image: waiting for A2-26 HTTPS API URL.' >> "$GITHUB_STEP_SUMMARY"
           else
-            echo 'Production API origin provided; publish job will validate HTTPS and run.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Production API origin provided; both image publications are enabled.' >> "$GITHUB_STEP_SUMMARY"
           fi
 
   publish:
     name: CD / GHCR publish (SHA)
-    # No production API URL -> do not publish a web image compiled for localhost.
-    if: ${{ github.event_name != 'pull_request' && vars.PROD_API_PUBLIC_URL != '' }}
+    # Bootstrap API first; never publish Web with a localhost API URL.
+    if: ${{ github.event_name != 'pull_request' }}
     needs: [api-quality, web-quality, release-configuration]
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -150,16 +150,20 @@ jobs:
               exit 1
             }
           fi
-          case "$PROD_API_PUBLIC_URL" in
-            https://*) ;;
-            *) echo '::error::PROD_API_PUBLIC_URL must start with https://.'; exit 1 ;;
-          esac
-          case "$PROD_API_PUBLIC_URL" in
-            *localhost*|*127.0.0.1*|*.invalid*|*example.com*|*example.org*)
-              echo '::error::PROD_API_PUBLIC_URL must be a real public HTTPS API origin.'
-              exit 1 ;;
-          esac
-          echo 'Production URL format and release ref validated.'
+          if [[ -n "$PROD_API_PUBLIC_URL" ]]; then
+            case "$PROD_API_PUBLIC_URL" in
+              https://*) ;;
+              *) echo '::error::PROD_API_PUBLIC_URL must start with https://.'; exit 1 ;;
+            esac
+            case "$PROD_API_PUBLIC_URL" in
+              *localhost*|*127.0.0.1*|*.invalid*|*example.com*|*example.org*)
+                echo '::error::PROD_API_PUBLIC_URL must be a real public HTTPS API origin.'
+                exit 1 ;;
+            esac
+            echo 'Public HTTPS API origin validated; both images will publish.'
+          else
+            echo 'API-only bootstrap: public API origin is not known yet; Web publication deferred.'
+          fi
 
       - uses: docker/setup-buildx-action@v3
       - name: Sign in to GitHub Container Registry
@@ -208,6 +212,7 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Build and publish Web image
+        if: ${{ env.PROD_API_PUBLIC_URL != '' }}
         id: web-image
         uses: docker/build-push-action@v6
         with:
@@ -234,7 +239,11 @@ jobs:
             echo ''
             echo "- Git commit: \`$GITHUB_SHA\`"
             echo "- API image: \`$API_NAME@$API_DIGEST\`"
-            echo "- Web image: \`$WEB_NAME@$WEB_DIGEST\`"
+            if [[ -n "$WEB_DIGEST" ]]; then
+              echo "- Web image: \`$WEB_NAME@$WEB_DIGEST\`"
+            else
+              echo '- Web image: not published (PROD_API_PUBLIC_URL is not configured).'
+            fi
             echo ''
             echo 'Deployment, production health/smoke and rollback are NOT verified by this workflow.'
             echo 'A2-26 must supply the hosting adapter and public URLs; A2-27 must verify migration and rollback.'
