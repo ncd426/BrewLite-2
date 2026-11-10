@@ -1,0 +1,241 @@
+name: CD - Package images (A2-25)
+
+# The production deploy adapter is deliberately not configured until A2-26
+# selects and verifies a hosting platform. A successful image publish is NOT
+# evidence of a successful production deployment.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: a2-25-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  api-quality:
+    name: CD / API quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/brewlite
+      JWT_SECRET: ci-only-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+      - name: Install API dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Lint API
+        run: npm run lint
+      - name: Run API unit tests
+        run: npm test -- --runInBand
+      - name: Build API
+        run: npm run build
+
+  web-quality:
+    name: CD / Web quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install web dependencies
+        run: npm ci
+      - name: Lint web
+        run: npm run lint
+      - name: Build web
+        run: npm run build
+
+  docker-build-check:
+    name: CD / Dockerfiles build check (PR)
+    if: ${{ github.event_name == 'pull_request' }}
+    needs: [api-quality, web-quality]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate API Dockerfile (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+      - name: Validate Web Dockerfile (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: false
+          build-args: |
+            NEXT_PUBLIC_API_URL=http://localhost:4000
+
+  release-configuration:
+    name: CD / Release configuration
+    needs: [api-quality, web-quality]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check production API origin for web image
+        env:
+          PROD_API_PUBLIC_URL: ${{ vars.PROD_API_PUBLIC_URL }}
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "PR build validation only; registry publishing is disabled on pull requests." >> "$GITHUB_STEP_SUMMARY"
+          elif [ -z "$PROD_API_PUBLIC_URL" ]; then
+            echo '::warning::A2-25: PROD_API_PUBLIC_URL is not set. GHCR publish is skipped. Configure it only after A2-26 chooses a public HTTPS API origin.'
+            echo 'Image publish: NOT VERIFIED (production API origin missing).' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Production API origin provided; publish job will validate HTTPS and run.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  publish:
+    name: CD / GHCR publish (SHA)
+    # No production API URL -> do not publish a web image compiled for localhost.
+    if: ${{ github.event_name != 'pull_request' && vars.PROD_API_PUBLIC_URL != '' }}
+    needs: [api-quality, web-quality, release-configuration]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PROD_API_PUBLIC_URL: ${{ vars.PROD_API_PUBLIC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify approved ref and public HTTPS origin
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" == refs/heads/* && "$GITHUB_REF" != refs/heads/main ]]; then
+            echo '::error::CD publication is allowed only on main or an approved version tag.'
+            exit 1
+          fi
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            git fetch --no-tags origin main
+            git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main || {
+              echo '::error::Version tag must reference a commit already on main.'
+              exit 1
+            }
+          fi
+          case "$PROD_API_PUBLIC_URL" in
+            https://*) ;;
+            *) echo '::error::PROD_API_PUBLIC_URL must start with https://.'; exit 1 ;;
+          esac
+          case "$PROD_API_PUBLIC_URL" in
+            *localhost*|*127.0.0.1*|*.invalid*|*example.com*|*example.org*)
+              echo '::error::PROD_API_PUBLIC_URL must be a real public HTTPS API origin.'
+              exit 1 ;;
+          esac
+          echo 'Production URL format and release ref validated.'
+
+      - uses: docker/setup-buildx-action@v3
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare image names and immutable SHA tags
+        id: image-tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo_lc="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          api="ghcr.io/${repo_lc}-api"
+          web="ghcr.io/${repo_lc}-web"
+          sha_tag="sha-${GITHUB_SHA:0:12}"
+          api_tags="${api}:${sha_tag}"
+          web_tags="${web}:${sha_tag}"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            api_tags="${api_tags}"$'\n'"${api}:${GITHUB_REF_NAME}"
+            web_tags="${web_tags}"$'\n'"${web}:${GITHUB_REF_NAME}"
+          fi
+          {
+            echo "api_name=$api"
+            echo "web_name=$web"
+            echo "api_tags<<API_TAGS_EOF"
+            printf '%s\n' "$api_tags"
+            echo 'API_TAGS_EOF'
+            echo "web_tags<<WEB_TAGS_EOF"
+            printf '%s\n' "$web_tags"
+            echo 'WEB_TAGS_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and publish API image
+        id: api-image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ${{ steps.image-tags.outputs.api_tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and publish Web image
+        id: web-image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: ${{ steps.image-tags.outputs.web_tags }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ env.PROD_API_PUBLIC_URL }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Record published immutable image digests
+        env:
+          API_NAME: ${{ steps.image-tags.outputs.api_name }}
+          WEB_NAME: ${{ steps.image-tags.outputs.web_name }}
+          API_DIGEST: ${{ steps.api-image.outputs.digest }}
+          WEB_DIGEST: ${{ steps.web-image.outputs.digest }}
+        shell: bash
+        run: |
+          {
+            echo '## A2-25: GHCR image publication'
+            echo ''
+            echo "- Git commit: \`$GITHUB_SHA\`"
+            echo "- API image: \`$API_NAME@$API_DIGEST\`"
+            echo "- Web image: \`$WEB_NAME@$WEB_DIGEST\`"
+            echo ''
+            echo 'Deployment, production health/smoke and rollback are NOT verified by this workflow.'
+            echo 'A2-26 must supply the hosting adapter and public URLs; A2-27 must verify migration and rollback.'
+          } >> "$GITHUB_STEP_SUMMARY"
