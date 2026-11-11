@@ -104,6 +104,9 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: actions/checkout@v4
+      - name: Unit test Render deployment adapter (offline)
+        run: python3 -m unittest discover -s scripts/cd -p test_render_release.py
       - name: Check production API origin for web image
         env:
           PROD_API_PUBLIC_URL: ${{ vars.PROD_API_PUBLIC_URL }}
@@ -128,6 +131,11 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      api_name: ${{ steps.image-tags.outputs.api_name }}
+      web_name: ${{ steps.image-tags.outputs.web_name }}
+      api_digest: ${{ steps.api-image.outputs.digest }}
+      web_digest: ${{ steps.web-image.outputs.digest }}
     env:
       PROD_API_PUBLIC_URL: ${{ vars.PROD_API_PUBLIC_URL }}
     steps:
@@ -245,6 +253,93 @@ jobs:
               echo '- Web image: not published (PROD_API_PUBLIC_URL is not configured).'
             fi
             echo ''
-            echo 'Deployment, production health/smoke and rollback are NOT verified by this workflow.'
-            echo 'A2-26 must supply the hosting adapter and public URLs; A2-27 must verify migration and rollback.'
+            echo 'Publishing alone does not prove deployment. See the guarded CD / Render deploy by digest + smoke job.'
+            echo 'Render deploy is gated by RENDER_DEPLOY_ENABLED and an A2-27 migration sign-off for this commit.'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-production:
+    name: CD / Render deploy by digest + smoke
+    # Deliberately disabled until the owner has approved production configuration.
+    if: ${{ github.ref == 'refs/heads/main' && vars.RENDER_DEPLOY_ENABLED == 'true' }}
+    needs: [publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+    environment:
+      name: production
+      url: ${{ vars.PROD_WEB_PUBLIC_URL }}
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_API_SERVICE_ID: ${{ vars.RENDER_API_SERVICE_ID }}
+      RENDER_WEB_SERVICE_ID: ${{ vars.RENDER_WEB_SERVICE_ID }}
+      PROD_API_PUBLIC_URL: ${{ vars.PROD_API_PUBLIC_URL }}
+      PROD_WEB_PUBLIC_URL: ${{ vars.PROD_WEB_PUBLIC_URL }}
+      API_IMAGE: ${{ needs.publish.outputs.api_name }}@${{ needs.publish.outputs.api_digest }}
+      WEB_IMAGE: ${{ needs.publish.outputs.web_name }}@${{ needs.publish.outputs.web_digest }}
+      MIGRATION_APPROVED_SHA: ${{ vars.A2_27_MIGRATION_APPROVED_SHA }}
+      A225_EVIDENCE_DIR: work/A2-25/evidence
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate release config and A2-27 migration approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$RENDER_API_KEY" ]]; then
+            echo '::error::Set secret RENDER_API_KEY in GitHub Actions.'; exit 1
+          fi
+          if [[ "$MIGRATION_APPROVED_SHA" != "$GITHUB_SHA" ]]; then
+            echo '::error::A2-27 migration sign-off missing for this exact commit. Set A2_27_MIGRATION_APPROVED_SHA to the full main SHA after schema review.'; exit 1
+          fi
+          for setting in RENDER_API_SERVICE_ID RENDER_WEB_SERVICE_ID PROD_API_PUBLIC_URL PROD_WEB_PUBLIC_URL; do
+            if [[ -z "${!setting}" ]]; then
+              echo "::error::Missing GitHub Actions Variable $setting"; exit 1
+            fi
+          done
+          if [[ "$API_IMAGE" != ghcr.io/*@sha256:* || "$WEB_IMAGE" != ghcr.io/*@sha256:* ]]; then
+            echo '::error::Both published immutable GHCR image digests are required.'; exit 1
+          fi
+          echo '## A2-25: production release' >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`$GITHUB_SHA\` (A2-27 migration review confirmed)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy API exact image digest and wait for Live
+        shell: bash
+        run: |
+          python3 scripts/cd/render_release.py deploy \
+            --service "$RENDER_API_SERVICE_ID" --image "$API_IMAGE" --label api
+
+      - name: Smoke API after deployment
+        shell: bash
+        run: |
+          python3 scripts/cd/render_release.py smoke --api-url "$PROD_API_PUBLIC_URL"
+
+      - name: Deploy Web exact image digest and wait for Live
+        shell: bash
+        run: |
+          python3 scripts/cd/render_release.py deploy \
+            --service "$RENDER_WEB_SERVICE_ID" --image "$WEB_IMAGE" --label web
+
+      - name: Smoke Web and API after deployment
+        shell: bash
+        run: |
+          python3 scripts/cd/render_release.py smoke \
+            --api-url "$PROD_API_PUBLIC_URL" --web-url "$PROD_WEB_PUBLIC_URL"
+
+      - name: Upload non-secret deployment evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-25-render-release-evidence
+          path: work/A2-25/evidence/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show rollback procedure on failure
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          echo '::error::A2-25 production release failed; do not claim Done.'
+          echo '## Recovery' >> "$GITHUB_STEP_SUMMARY"
+          echo '1. Inspect the two Render deployment histories and find the last successful image digests.' >> "$GITHUB_STEP_SUMMARY"
+          echo '2. Use Render Deploys -> Rollback for the affected services; verify API /health, /products and Web /.' >> "$GITHUB_STEP_SUMMARY"
+          echo '3. Do not roll back PostgreSQL schema blindly. Coordinate with Khoa (A2-27).' >> "$GITHUB_STEP_SUMMARY"
