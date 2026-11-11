@@ -76,3 +76,91 @@ A `200` on `/health` and `/products` checks service reachability, not VNPay prod
 | Rollback exercised | A2-27 procedure and measured evidence | Pending |
 
 All generated local artifacts/test logs should stay under `work/A2-25/` (gitignored); only reviewed documentation and CD source belong in tracked folders.
+
+
+---
+
+## 2026-11-11 follow-up: Render release adapter (finish A2-25)
+
+**Observed by Danh:** PRs [#51](https://github.com/ncd426/BrewLite-2/pull/51) and [#52](https://github.com/ncd426/BrewLite-2/pull/52) were merged. [CD run 42947159680](https://github.com/ncd426/BrewLite-2/actions/runs/42947159680) passed and published **both** SHA-tagged Docker images. At the time of the last manual check, Render reported both services Live:
+
+- Public Web: `https://brewlite-2-web.onrender.com`
+- Public API: `https://brewlite-api-49rx.onrender.com`
+- Database: nine Prisma migrations applied; API `/health` returned `status=ok`, API `/products` returned HTTP 200 with `[]` (empty products; seed/content belongs to A2-24/A2-27 and business acceptance, not CD).
+
+The original analysis earlier in this document describes the 2026-11-10 **snapshot** only; the status above supersedes its provider-pending notes. **Do not claim a successful automated deployment or rollback until new runs prove those steps.**
+
+### What the follow-up code does
+
+The job `CD / Render deploy by digest + smoke` is added to `.github/workflows/cd.yml` and runs **only** on `main`, after the quality gates and GHCR `publish` job. It is off until the owner explicitly sets the GitHub Actions variable `RENDER_DEPLOY_ENABLED=true`.
+
+1. Requires Khoa's **per-release migration approval**, represented by `A2_27_MIGRATION_APPROVED_SHA` matching the **full** GitHub commit SHA. Confirm `prisma migrate status` is up to date for that revision and take a backup if real business data exists. A2-25 does not run migrations using a public production DB URL. If a later version introduces migrations, Khoa must apply/verify them safely before approving that SHA.
+2. Uses a Render API key stored as a GitHub **secret**, plus API/Web **service IDs** and public URLs stored as non-secret GitHub **variables**.
+3. Asks Render to deploy the **exact immutable GHCR image digest** produced by the same publish job, first API, then Web. No mutable `latest` tag and no manual copy/paste of SHA tags.
+4. Polls each newly created **deploy ID** until Render itself reports that deployment `live`, checking the returned image reference equals the requested digest. A previously live service is not enough to pass.
+5. Runs `GET /health` (must be JSON `status=ok`), `GET /products` (must be a JSON list), and Web `/` (must return HTML). A `200 []` verifies technical connectivity **only**, not usable menu or E2E checkout.
+6. Stores non-secret JSON evidence as a GitHub Actions artifact `a2-25-render-release-evidence`; any failed deploy or smoke step fails the job and writes rollback guidance.
+
+**Do not send Render API keys or deployment secrets in issues, screenshots, chat, source files, or Actions logs.** Render API keys can control production services; use a scoped key when available, rotate promptly if exposed. Rotate previously exposed DB/JWT credentials before treating the demo as a real public environment.
+
+### One-time GitHub configuration
+
+In GitHub **Settings > Secrets and variables > Actions**:
+
+| Type | Exact name | Value / where to find |
+| --- | --- | --- |
+| Secret | `RENDER_API_KEY` | Render **Account Settings > API Keys**; create one for GitHub Actions, preferably deployment-scoped |
+| Variable | `RENDER_API_SERVICE_ID` | API Render service ID, format `srv-...`, from service URL or Settings (**not** a `dep-...` deploy ID) |
+| Variable | `RENDER_WEB_SERVICE_ID` | Web Render service ID, format `srv-...` |
+| Variable | `PROD_API_PUBLIC_URL` | `https://brewlite-api-49rx.onrender.com` |
+| Variable | `PROD_WEB_PUBLIC_URL` | `https://brewlite-2-web.onrender.com` |
+| Variable | `A2_27_MIGRATION_APPROVED_SHA` | Full 40-character commit SHA; set **after** Khoa checks the schema/migration state for that exact revision |
+| Variable | `RENDER_DEPLOY_ENABLED` | `true` **only after** all configuration above is verified; otherwise omit or set `false` |
+
+Go to GitHub **Settings > Environments** and create `production`. When available for the repository/plan, configure **required reviewers** (Bảo/Khoa). The environment is not automatically protected merely because the workflow references it. The SHA-specific migration gate remains mandatory even if required reviewers cannot be configured.
+
+You can set non-secret variables from PowerShell after verifying values:
+
+```powershell
+$repo = 'ncd426/BrewLite-2'
+gh variable set PROD_API_PUBLIC_URL -R $repo --body 'https://brewlite-api-49rx.onrender.com'
+gh variable set PROD_WEB_PUBLIC_URL -R $repo --body 'https://brewlite-2-web.onrender.com'
+# Paste YOUR srv-... IDs below; they are different from deploy IDs.
+gh variable set RENDER_API_SERVICE_ID -R $repo --body 'srv-REPLACE_WITH_REAL_API_SERVICE_ID'
+gh variable set RENDER_WEB_SERVICE_ID -R $repo --body 'srv-REPLACE_WITH_REAL_WEB_SERVICE_ID'
+```
+
+**Do not use those two placeholder service-ID commands until replaced with real values.** Create `RENDER_API_KEY` as a GitHub secret in the GitHub website, not with `--body` on the CLI where a copied command could expose it.
+
+After the follow-up PR is merged and Bảo/Khoa have approved the new revision:
+
+```powershell
+$repo = 'ncd426/BrewLite-2'
+$sha = gh api "repos/$repo/commits/main" --jq '.sha'
+gh variable set A2_27_MIGRATION_APPROVED_SHA -R $repo --body $sha
+gh variable set RENDER_DEPLOY_ENABLED -R $repo --body true
+gh workflow run cd.yml -R $repo --ref main
+gh run list -R $repo --workflow cd.yml --event workflow_dispatch --limit 3
+```
+
+Track the new workflow run and confirm `CD / Render deploy by digest + smoke` **PASS**. Check the uploaded evidence for both image digests/deploy IDs and all three HTTP 200 checks. If any release fails, set `RENDER_DEPLOY_ENABLED=false`, inspect the failed deployment and follow the rollback section below.
+
+### Rollback (must be demonstrated and recorded)
+
+1. Keep the immediately previous successful `sha256` image digest in GHCR; Render **re-pulls from the registry** on rollback and cannot restore an image that was deleted. Review GitHub Actions GHCR publication summaries for the prior digest.
+2. For a **controlled non-destructive test on a demo release** (no incompatible DB migration): Render > API/Web service > **Deploys** > select the preceding successful deployment > **Rollback**. Do not test destructive recovery on important data.
+3. Wait for each selected rollback deploy to become `Live` and run the smoke script: `scripts/cd/Smoke-A2-25-Production.ps1`. Record the old SHA/digest, new rollback deploy ID, UTC timestamps, screenshot and smoke CSV under `work/A2-25/evidence`.
+4. To restore the latest release, re-approve its SHA if necessary and run `gh workflow run cd.yml ...` again. Observe both services `Live` on the new digest and run smoke again.
+5. A Render application rollback does **not** reverse Prisma migrations or database content; Khoa handles backup/migration compatibility separately. Do not claim automatic rollback: the adapter **fails fast** and the recovery procedure is manual.
+
+### Acceptance evidence needed to close Issue #27
+
+- [x] PR #51/#52 merged; [run 42947159680](https://github.com/ncd426/BrewLite-2/actions/runs/42947159680) published both GHCR image digests.
+- [x] Manual Render Web/API deploy reported Live; nine migrations applied; basic API health observed.
+- [ ] Follow-up CD PR merged after Bảo's review.
+- [ ] Render deployment via GitHub Actions **same digest** PASS, not skipped; retrieve action artifact with two deploy IDs and smoke JSON.
+- [ ] Controlled rollback tested and smoke PASS; evidence recorded.
+- [ ] Khoa's migration confirmation and Bảo's review recorded.
+- [ ] Issue #27 closed and project tracker updated; only after all required proof exists.
+
+Official references: [Render deploy API](https://api-docs.render.com/reference/create-deploy), [retrieve deploy](https://api-docs.render.com/reference/retrieve-deploy), [image-backed services](https://render.com/docs/deploying-an-image), [rollback](https://render.com/docs/rollbacks).
