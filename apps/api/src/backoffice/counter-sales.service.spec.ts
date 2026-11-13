@@ -1,11 +1,6 @@
-import { OrderChannel, OrderStatus, PaymentStatus } from '@prisma/client';
+import { OrderChannel, OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CounterSalesService } from './counter-sales.service';
-
-const payload = {
-  method: 'CASH' as const,
-  items: [{ productId: 1, size: 'S', qty: 2, toppings: [] }],
-};
 
 function fixture(stockOk = true) {
   let stockWriteCount = 0;
@@ -31,10 +26,10 @@ function fixture(stockOk = true) {
       orderCreateCount += 1;
       return { id: 91, status: OrderStatus.PAID, channel: OrderChannel.COUNTER, total: 70000 };
     } },
-    payment: { create: async () => {
+    payment: { create: async ({ data }: Prisma.PaymentCreateArgs) => {
       paymentRecord = {
-        id: 12, method: 'CASH', status: PaymentStatus.SUCCESS,
-        orderId: 91, pointsUsed: 0,
+        ...data,
+        id: 12,
         order: {
           id: 91, status: OrderStatus.PAID, channel: OrderChannel.COUNTER,
           userId: 2, total: 70000, items: lines,
@@ -51,16 +46,26 @@ function fixture(stockOk = true) {
     service: new CounterSalesService(prisma),
     get stockWrites() { return stockWriteCount; },
     get orderCreates() { return orderCreateCount; },
+    get payment() { return paymentRecord; },
   };
 }
 
-describe('counter sale business rules', () => {
+describe.each(['CASH', 'CARD'] as const)('counter sale business rules (%s)', (method) => {
+  const payload = {
+    method,
+    items: [{ productId: 1, size: 'S', qty: 2, toppings: [] }],
+  };
+
   it('creates a PAID counter order and SUCCESS payment, deducting stock once', async () => {
     const scenario = fixture();
     const result = await scenario.service.create(2, payload, 'sale-test-1');
     expect(result).toMatchObject({
       orderId: 91, total: 70000, status: OrderStatus.PAID,
-      channel: OrderChannel.COUNTER, replayed: false,
+      channel: OrderChannel.COUNTER, method, replayed: false,
+    });
+    expect(scenario.payment).toMatchObject({
+      orderId: 91, method, status: PaymentStatus.SUCCESS, amount: 70000, pointsUsed: 0,
+      idempotencyKey: 'COUNTER-sale-test-1',
     });
     expect(scenario.orderCreates).toBe(1);
     expect(scenario.stockWrites).toBe(1);
@@ -71,7 +76,7 @@ describe('counter sale business rules', () => {
     const first = await scenario.service.create(2, payload, 'sale-test-2');
     const second = await scenario.service.create(2, payload, 'sale-test-2');
     expect(first.orderId).toBe(second.orderId);
-    expect(second.replayed).toBe(true);
+    expect(second).toMatchObject({ method, replayed: true });
     expect(scenario.orderCreates).toBe(1);
     expect(scenario.stockWrites).toBe(1);
   });
