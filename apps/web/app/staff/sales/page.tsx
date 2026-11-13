@@ -7,7 +7,6 @@ import {
   createCounterSale,
   fetchProducts,
   type CounterSaleResponse,
-  type PaymentMethod,
   type Product,
 } from '@/lib/api';
 
@@ -39,7 +38,6 @@ function SalesContent() {
   const [cart, setCart] = useState<Line[]>([]);
   const [size, setSize] = useState<Size>('M');
   const [toppings, setToppings] = useState<string[]>([]);
-  const [method, setMethod] = useState<PaymentMethod>('CASH');
   const [selling, setSelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<CounterSaleResponse | null>(null);
@@ -93,7 +91,7 @@ function SalesContent() {
     try {
       if (!saleKey.current) saleKey.current = crypto.randomUUID();
       const result = await createCounterSale({
-        method,
+        method: 'CARD',
         items: cart.map(({ productId, size, qty, toppings }) => ({ productId, size, qty, toppings })),
       }, saleKey.current);
       setReceipt(result);
@@ -130,7 +128,7 @@ function SalesContent() {
       {receipt ? (
         <section className="mt-7 rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-emerald-800">Đã tạo đơn tại quầy #{receipt.orderId}</h2>
-          <p className="mt-3 text-sm text-slate-700">Trạng thái: PAID · Phương thức mô phỏng: {receipt.method}</p>
+          <p className="mt-3 text-sm text-slate-700">Trạng thái: PAID · Phương thức mô phỏng: {receipt.method === 'CARD' ? 'Thẻ' : receipt.method}</p>
           <p className="mt-2 text-2xl font-bold text-amber-950">{money(receipt.total)}</p>
           <p className="mt-3 text-sm text-slate-600">Bản demo chỉ ghi nhận thanh toán mô phỏng, không thu tiền thật.</p>
           <div className="mt-5 flex flex-wrap gap-3">
@@ -197,11 +195,7 @@ function SalesContent() {
               <p className="flex justify-between font-bold"><span>Tạm tính:</span><span>{money(estimatedTotal)}</span></p>
               <p className="mt-2 text-xs text-slate-500">Tổng tiền chính xác được Backend tính theo bảng giá.</p>
             </div>
-            <fieldset className="mt-5 space-y-2">
-              <legend className="text-sm font-semibold text-slate-900">Xác nhận thanh toán (mô phỏng)</legend>
-              <label className="flex items-center gap-2 text-sm"><input type="radio" checked={method === 'CASH'} onChange={() => { setMethod('CASH'); saleKey.current = null; }}/>Tiền mặt</label>
-              <label className="flex items-center gap-2 text-sm"><input type="radio" checked={method === 'CARD'} onChange={() => { setMethod('CARD'); saleKey.current = null; }}/>Thẻ</label>
-            </fieldset>
+            <p className="mt-5 text-sm text-slate-700">Thanh toán bằng thẻ (mô phỏng), không thu tiền thật.</p>
             {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
             <button type="button" disabled={!cart.length || selling} onClick={() => void finishSale()}
               className="mt-6 w-full rounded-xl bg-amber-800 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
