@@ -35,7 +35,7 @@ export default function LoginPage() {
       );
       const destination = workArea
         ? safeWorkNext && next ? next : workArea
-        : safeCustomerNext && next ? next : '/cart';
+        : safeCustomerNext && next ? next : '/';
       // Full navigation also resets stale customer/worker UI state.
       window.location.replace(destination);
     } catch (cause) {
