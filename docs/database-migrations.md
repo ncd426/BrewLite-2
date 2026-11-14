@@ -1,124 +1,136 @@
-# BrewLite - Prisma Migration Guide (Prisma 6 / PostgreSQL)
+﻿# BrewLite — Prisma migration, seed và phục hồi DB
 
-This patch was made from the uploaded `api.zip` snapshot. It changes ONLY
-`Product.version` in `schema.prisma`: the other four core models and the
-`Payment.idempotencyKey @unique` constraint already existed. Do not overwrite
-teammates' changes without reviewing the diff.
+Đối chiếu ngày 14/11/2026 tại `506eaeb`, Prisma 6/PostgreSQL 16. Runbook này
+thay hướng dẫn patch Product.version hai migration cũ. Giữ schema và toàn bộ
+SQL cùng release trong Git.
 
-## Patch contents
+## Chín migration hiện tại
 
-- `apps/api/prisma/schema.prisma`: original models + `Product.version Int @default(0)`
-- `apps/api/prisma/migrations/20261017120000_baseline_existing_schema/migration.sql`
-  is the **pre-version** schema (Product, User, Order, OrderItem, Payment).
-- `apps/api/prisma/migrations/20261017120100_add_product_version/migration.sql`
-  adds `Product.version` without dropping tables or deleting rows.
-- `apps/api/prisma/migrations/migration_lock.toml`: PostgreSQL migration lock.
+| Migration | Thay đổi chính / tương thích |
+| --- | --- |
+| `20261017120000_baseline_existing_schema` | Năm bảng core và enum trạng thái. Không chạy CREATE TABLE lên DB đã có các bảng này. |
+| `20261017120100_add_product_version` | Thêm version cho Product tại thời điểm đó. |
+| `20261017173000_add_promotions_order_options` | Promotion và thông tin options/giảm giá trên đơn. |
+| `20261021150000_add_user_name` | Tên người dùng. |
+| `20261031170000_loyalty_redemption` | Payment.pointsUsed và constraint không âm. |
+| `20261102100000_ingredient_inventory_recipes` | Ingredient/ProductIngredient; **bỏ Product.stock và Product.version**, image cũ có thể không tương thích. |
+| `20261104150000_add_user_roles` | CUSTOMER/STAFF/ADMIN, user cũ mặc định CUSTOMER. |
+| `20261104160000_add_order_channel` | ONLINE/COUNTER, đơn cũ mặc định ONLINE. |
+| `20261105120000_payment_gateway_expiry` | Tham chiếu provider, checkout URL, expiry và unique indexes. |
 
-## First, from the BrewLite repository root
+Nguồn: [schema.prisma](../apps/api/prisma/schema.prisma) và
+[migrations](../apps/api/prisma/migrations). Không giả định mọi migration đều
+additive hoặc đảo được tự động. Tồn kho hiện dựa trên công thức nguyên liệu;
+Product.version không còn trong schema hiện tại.
 
-1. Back up important data (for example, using pgAdmin or `pg_dump`).
-2. Extract the patch at the repository root. Compare with `git diff`.
-3. Verify `apps/api/.env` points to your intended PostgreSQL database.
-4. In PowerShell, `cd apps/api` and run:
+## DB mới, local hoặc disposable
 
-```powershell
-npx prisma migrate status
-```
-
-**STOP** if there are existing applied migrations whose SQL/history is not in
-this patch, or if the database schema differs from the original schema in the
-uploaded ZIP. Do not ignore history mismatches or prompts to reset a database.
-
-## Case A - your PostgreSQL database ALREADY has the five tables
-
-This is the likely case if you previously ran `npx prisma db push` successfully.
-It is safe to use **only if** the existing database still matches the original
-pre-version `schema.prisma` and has no conflicting migration history.
+Cấu hình `apps/api/.env`, kiểm tra host/port/tên DB. API trên host dùng
+`localhost:5433` mặc định; container dùng `db`. Nếu dùng Compose DB, đồng bộ
+password root `.env` với API `.env`.
 
 ```powershell
-cd "C:\hoc tap\SWE\BrewLite\apps\api"
-npx prisma migrate resolve --applied 20261017120000_baseline_existing_schema
-npx prisma migrate deploy
+cd apps/api
+npm ci
 npx prisma generate
-npx prisma migrate status
-```
-
-- `migrate resolve --applied` records the first migration in
-  `_prisma_migrations`, **without running** its `CREATE TABLE` statements.
-- `migrate deploy` applies only the second migration (adds `version`).
-- `migrate status` should report the database schema is up to date.
-
-**Do not** use `migrate reset` or force `migrate dev` if it asks to reset a
-non-empty database. That can delete tables/data.
-
-## Case B - a completely EMPTY development database
-
-```powershell
-cd "C:\hoc tap\SWE\BrewLite\apps\api"
 npx prisma migrate deploy
-npx prisma generate
 npx prisma migrate status
 ```
 
-Prisma will apply BOTH migrations in order (create 5 tables, then add version).
-
-## Verify the change
+DB mới phải áp dụng cả 9 migration. `generate` chỉ tạo client. Sau khi xác
+nhận DB local mới/disposable, khởi tạo demo và kho bằng:
 
 ```powershell
-npx prisma studio
+npm run seed -- --initialize-inventory
 ```
 
-Open http://localhost:5555 and inspect the Product table for the `version`
-column. `Payment.idempotencyKey` has the Prisma `@unique` index. The migration
-only creates the database structure: it does NOT implement the runtime
-concurrency/idempotency logic.
+Seed tạo users/menu/promotions/orders/recipes. `SEED_DEMO_PASSWORD` >=12 ký tự
+chỉ đặt khi tạo user; password cũ được giữ. `--initialize-inventory` có thể đặt
+lại số dư kho, chỉ dùng lúc khởi tạo demo. `npm run seed` không cờ giữ số dư
+kho hiện có, vẫn có thể tạo dữ liệu mẫu còn thiếu và cập nhật ảnh theo fixture.
+Seed từ chối `NODE_ENV=production`.
 
-Optional, with a PostgreSQL SQL console (pgAdmin or psql):
+## DB có dữ liệu hoặc tạo bằng db push
 
-```sql
-SELECT column_name, data_type, column_default
-FROM information_schema.columns
-WHERE table_schema='public' AND table_name='Product' AND column_name='version';
+1. Sao lưu, ghi SHA đang chạy và thử restore trên DB riêng.
+2. Chạy `prisma migrate status`, đối chiếu `_prisma_migrations`, schema thật và
+   toàn bộ SQL của release. Status kiểm tra lịch sử, không thay kiểm tra drift.
+3. Nếu lịch sử/SQL không khớp, dừng để điều tra. Không dùng `migrate reset`,
+   `db push --force-reset` hoặc resolve hàng loạt để bỏ qua sai khác.
+4. Chỉ khi schema DB khớp chính xác baseline đầu tiên và chưa có lịch sử xung
+   đột, người phụ trách mới baseline:
 
-SELECT indexname, indexdef
-FROM pg_indexes
-WHERE schemaname='public' AND tablename='Payment'
-  AND indexname='Payment_idempotencyKey_key';
+   ```powershell
+   npx prisma migrate resolve --applied 20261017120000_baseline_existing_schema
+   npx prisma migrate deploy
+   npx prisma migrate status
+   ```
+
+   Resolve ghi lịch sử, không chạy SQL. Deploy áp dụng **mọi migration còn
+   thiếu**, không chỉ migration thứ hai. DB đã chứa thay đổi mới hơn từ
+   `db push` cần kế hoạch baseline riêng theo schema thật.
+5. Kiểm tra query menu, recipe inventory, tạo/đọc đơn trên môi trường phù hợp.
+   Không chạy demo seed lên production để tạo dữ liệu kinh doanh thật.
+
+## DB kiểm thử
+
+[README](../README.md) tách hai nhóm DB:
+
+- `localhost:5434/brewlite_test`: `test:db:setup` kiểm tra URL rồi reset/migrate/
+  seed. `test:isolated` và `test:e2e` nạp `apps/api/.env.test`.
+- `brewlite_task10_*`: DB thứ hai cho PostgreSQL test với
+  `RUN_DB_INTEGRATION=1`; không bật cờ qua runner bị giới hạn ở `brewlite_test`.
+
+Lượt kiểm tra A2-29 tái tạo DB disposable với 9 migration/seed, chạy test và
+cleanup. [Báo cáo ngày 14/11](evidence/sprint-2/system-verification-2026-11-14.md)
+ghi kết quả và các test thất bại; bằng chứng local không thay migration production.
+
+## Production, backup và phục hồi
+
+Khoa phụ trách DB/migration, Danh review A2-27 theo backlog. Trước mỗi release
+cần ghi SHA, migration đang có/còn thiếu, tương thích image trước/sau, lịch
+bảo trì nếu cần, nơi lưu backup, người phục hồi và kết quả restore thử.
+API Dockerfile không tự migrate/seed khi chạy.
+
+Dùng private connection của môi trường vận hành để `prisma migrate deploy`,
+kiểm tra status rồi mới xác nhận full SHA trong `A2_27_MIGRATION_APPROVED_SHA`.
+CD chỉ kiểm tra SHA approval, không tự backup DB hoặc áp dụng migration production.
+
+Ví dụ bằng PostgreSQL client, với `PGHOST`, `PGPORT`, `PGUSER`, `PGDATABASE`
+và cơ chế mật khẩu cấu hình ngoài source/log:
+
+```powershell
+# PGDATABASE trỏ DB cần backup; giữ file ngoài Git với quyền truy cập riêng.
+pg_dump --format=custom --file=brewlite-before-release.dump
+pg_restore --list brewlite-before-release.dump
 ```
 
-## For every teammate (after merging the patch)
+Mở terminal khác, đổi `PGHOST`, `PGPORT`, `PGUSER` và cơ chế mật khẩu sang
+**cluster restore riêng**, kiểm tra kết nối đích rồi mới tạo DB kiểm chứng.
+Không dùng lại connection production của bước backup:
 
-- Pull the same branch/PR; keep `schema.prisma` AND the complete `migrations`
-  folder in Git. Do NOT commit `.env`, `node_modules` or `dist`.
-- In their own `apps/api` directory: `npm ci` (first time), then apply the
-  correct Case A or Case B above for THEIR database, and run `npx prisma generate`.
-- For future changes: one teammate edits `schema.prisma`, creates a NEW
-  migration with `npx prisma migrate dev --name <change_name>` on an already
-  baselined dev database, commits both, and teammates use
-  `npx prisma migrate deploy` to apply shared migrations.
-- Replace the old `npx prisma db push` instructions in the project README after
-  everyone has moved to migrations; mixing `db push` and migration history can
-  cause schema drift.
+```powershell
+# Chỉ chạy sau khi đã xác minh cluster restore riêng trong terminal này.
+createdb brewlite_restore_check
+pg_restore --exit-on-error --no-owner --no-privileges --dbname=brewlite_restore_check brewlite-before-release.dump
+```
 
-## What still needs backend implementation?
+Xác minh dữ liệu/query và ứng dụng tương thích trên DB restore mới.
+`pg_restore --list` chỉ kiểm tra danh mục, chưa chứng minh restore thành công.
+Khi phục hồi production, dừng ghi theo kế hoạch, bảo toàn DB lỗi để điều tra,
+xác định dữ liệu phát sinh sau backup có thể mất, chỉ chuyển kết nối sau khi
+người phụ trách xác nhận dữ liệu/ứng dụng. Chưa có drill restore production
+trong hồ sơ hiện tại.
 
-The uploaded `ProductsService` returns a hard-coded in-memory menu;
-`UsersService` stores users in a Map. Customer payments create expiring
-VNPay provider sessions. The API updates an order to `PAID` or
-`PAYMENT_FAILED` only after a provider callback passes signature, reference, and
-amount checks. The browser return URL does not settle a payment. Pending QR
-payments expire after the configured TTL and are canceled by the API expiry
-sweeper. The unique `idempotencyKey` protects retries, and a partial unique
-index permits at most one pending payment per order.
+Rollback Render image không đảo schema/data. Migration nguyên liệu có DROP
+COLUMN; không tự viết SQL đảo ngược khi lỗi. Chọn forward fix hoặc khôi phục
+backup đã kiểm chứng theo tương thích/phạm vi dữ liệu. Ghi thời gian phục hồi
+thực tế trước khi nghiệm thu. Xem [deployment](deployment.md) cho rollback API/Web.
 
-## Security note
+## Thay đổi schema tiếp theo
 
-The uploaded `api.zip` included `.env` and `node_modules`. This patch excludes
-both. Do not upload or commit actual credentials. If a sensitive password or
-API token has been shared, rotate it as appropriate.
-
-## Status
-
-SQL migration files are prepared, but **not applied to your Windows PostgreSQL
-instance**. Running the appropriate commands above and inspecting the outputs
-is required before anyone can report "migration succeeded".
+Tạo migration mới trên DB phát triển riêng bằng `prisma migrate dev --name
+<ten_thay_doi>`. Review SQL/schema/code, kiểm tra từ DB trắng và revision trước,
+commit cả schema/SQL. Không sửa SQL đã áp dụng hoặc trộn `db push` vào lịch sử
+chung. Thành viên khác dùng `migrate deploy`; lưu log không chứa URL/password
+và link review vào PR.
