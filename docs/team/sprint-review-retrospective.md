@@ -1,7 +1,18 @@
 # Sprint Review & Retrospective — BrewLite Assignment 2
 
+<!-- A2-29 STRUCTURE QA 2026-11-15 -->
+> **Hiện trạng:** Đây là nhật ký kỹ thuật Sprint 1/2 và bản tổng hợp trước/sau sửa, **chưa phải biên bản họp đã được cả nhóm phê duyệt**. Xem [form xác nhận A2-29](a2-29-review-signoff.md) để ghi ngày họp, ý kiến, quyết định, hành động và xác nhận Danh/Bảo/Khoa. Dữ liệu full DB 165/165 PASS, Render CD PASS nằm trong [hồ sơ cuối](../evidence/sprint-2/a2-29-delivery-evidence-2026-11-15.md); các dòng FAIL/P2028/404 bên dưới là bối cảnh lịch sử trước sửa, không nên coi là lỗi mới chưa xử lý.
+
 > **A2-29 · Bản tổng hợp kỹ thuật, chờ nhóm xác nhận.**
 > Baseline code: `506eaeb`. Tài liệu ghi nhận sản phẩm và đóng góp có thể đối chiếu trong repository. Thông tin cuộc họp, phản hồi và quyết định thực tế còn chờ xác nhận. [Retest 14/11 sau patch](../evidence/sprint-2/a2-29-retests-2026-11-14.md) có DB-01/DB-02 và API E2E riêng PASS theo log PowerShell do developer cung cấp; không thay thế full DB suite, browser E2E hoặc phê duyệt Sprint.
+
+<!-- A2-29 FINAL HANDOVER APPENDIX 2026-11-15 -->
+
+## Cập nhật minh chứng cuối Sprint 2 (15/11/2026)
+
+Các nhận xét về lỗi DB và E2E trong bảng Sprint 2 ở trên là **kết quả baseline**; sau các PR/fix, log developer ghi nhận full PostgreSQL regression 165/165 PASS, browser E2E local 5/5 checkpoint PASS, và bản UI production `52e0883` đã deploy/smoke PASS qua [CD run #43625066012](https://github.com/ncd426/BrewLite-2/actions/runs/43625066012). Người chạy báo demo thủ công trên Render thành công. Xem [A2-29 evidence](../evidence/sprint-2/a2-29-delivery-evidence-2026-11-15.md) và [A2-28 demo](../evidence/sprint-2/a2-28-production-demo.md).
+
+**Đây chưa phải biên bản Review/Retrospective được nhóm duyệt**. Ngày giờ thực tế, ý kiến stakeholder, quyết định và xác nhận của Danh/Bảo/Khoa phải được điền vào [mẫu sign-off](a2-29-review-signoff.md) và xác thực bằng comment/PR. Không tự chuyển trạng thái review sang Đạt chỉ vì code/test/deploy PASS.
 
 ## Phạm vi và nguồn đối chiếu
 
@@ -26,7 +37,7 @@
 
 `README-evidence.txt` vẫn ghi “No Sprint 1 PR”, nhưng `PR-status.txt` đã có PR [#45](https://github.com/ncd426/BrewLite-2/pull/45), và Git có merge `e56c690` (#45), `57f588f` (#47). Các log `docker-compose.log`, `docker-build.log`, `screenshot-capture.log` được liệt kê nhưng không có trong bộ file Git đã đối chiếu; chưa coi là evidence đính kèm.
 
-### Sprint 2: kiểm thử, database, CD và bàn giao
+### Sprint 2: diễn biến lịch sử kiểm thử, database, CD và bàn giao
 
 **Mục tiêu:** hoàn thiện luồng khách mua hàng và hồ sơ phát hành sau Gate Task 4.
 
@@ -98,11 +109,3 @@ Chưa có dữ liệu story points theo ngày để tính velocity/burndown ho�
 | Thành viên 3 | Phần đóng góp/trình bày, phản hồi về Increment và cải tiến được đồng ý. | Chờ xác nhận. |
 
 **Trạng thái A2-29:** hồ sơ kỹ thuật và bằng chứng ba nhóm đóng góp đã được chuẩn bị; phần sự kiện và xác nhận còn mở. Chưa tự đánh dấu `Hoàn thành/Đạt` hoặc đóng Gate Task 5.
-
-<!-- A2-29 FINAL HANDOVER APPENDIX 2026-11-15 -->
-
-## Cập nhật minh chứng cuối Sprint 2 (15/11/2026)
-
-Các nhận xét về lỗi DB và E2E trong bảng Sprint 2 ở trên là **kết quả baseline**; sau các PR/fix, log developer ghi nhận full PostgreSQL regression 165/165 PASS, browser E2E local 5/5 checkpoint PASS, và bản UI production `52e0883` đã deploy/smoke PASS qua [CD run #43625066012](https://github.com/ncd426/BrewLite-2/actions/runs/43625066012). Người chạy báo demo thủ công trên Render thành công. Xem [A2-29 evidence](../evidence/sprint-2/a2-29-delivery-evidence-2026-11-15.md) và [A2-28 demo](../evidence/sprint-2/a2-28-production-demo.md).
-
-**Đây chưa phải biên bản Review/Retrospective được nhóm duyệt**. Ngày giờ thực tế, ý kiến stakeholder, quyết định và xác nhận của Danh/Bảo/Khoa phải được điền vào [mẫu sign-off](a2-29-review-signoff.md) và xác thực bằng comment/PR. Không tự chuyển trạng thái review sang Đạt chỉ vì code/test/deploy PASS.

@@ -392,6 +392,8 @@ Scrum; các bước quy trình này không được tự động hoàn thành b�
 
 <!-- A2-29 FINAL HANDOVER APPENDIX 2026-11-15 -->
 
+**Muc luc theo Task 1-5:** [Submission map](docs/README.md) - vi tri tai lieu, UML, evidence, cac gate dang cho xac nhan.
+
 ## Assignment 2 — Bản production và hồ sơ bàn giao cuối kỳ (15/11/2026)
 
 **Phiên bản app đã triển khai:** `52e0883a081422a9718f51097a32f44b301d9850` (PR [#59](https://github.com/ncd426/BrewLite-2/pull/59)). GitHub [CD run #43625066012](https://github.com/ncd426/BrewLite-2/actions/runs/43625066012) ghi nhận quality/publish/Render deploy+smoke thành công theo log operator; ứng dụng chạy tại [Web HTTPS](https://brewlite-2-web.onrender.com) và [API health](https://brewlite-api-49rx.onrender.com/health). Các kết quả lỗi trong báo cáo baseline 14/11 phản ánh **trước khi sửa**; xem [bằng chứng A2-29 hiện tại](docs/evidence/sprint-2/a2-29-delivery-evidence-2026-11-15.md) để phân biệt với lần kiểm thử local 165/165 PASS và demo production do người chạy xác nhận.

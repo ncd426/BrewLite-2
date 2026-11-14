@@ -1,5 +1,9 @@
 # A2-30 — Checklist bàn giao Assignment 2
 
+<!-- A2-29 STRUCTURE QA 2026-11-15 -->
+
+**Bản đồ hồ sơ theo Task 1-5:** [docs/README.md](../../README.md). Những mục chờ video, team sign-off, DB private và release phải giữ trạng thái chưa xác minh.
+
 Dựa trên Mục 9.1 và Task 5.4 trong **BrewLite – Assignment 2 REQUIREMENTS TO DEPLOYMENT VER 1.0**. Khi có bằng chứng/giảng viên truy cập được thì đánh dấu. Chưa có bằng chứng không đồng nghĩa mục đó thất bại, nhưng không được tự đánh dấu đạt.
 
 | Checklist PDF | Link minh chứng và ghi chú | Trạng thái kiểm tra |
