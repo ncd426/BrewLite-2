@@ -158,6 +158,11 @@ thuộc commit raw log/env/dump. Lệnh tái lập: [README](../../../README.md)
 
 `vexp verify_done` không báo parse error, broken import hoặc dependent còn
 thiếu; không liệt kê impacted tests. Đây là kiểm tra cấu trúc index, không
-thay kết quả test/AC ở trên. Kiểm tra 179 đích liên kết local trong bảy file
+thay kết quả test/AC ở trên. Kiểm tra 180 đích liên kết local trong bảy file
 tài liệu không có đích thiếu; `git diff --check` đạt. PR docs giữ các test DB thất bại và các mục cần
 xác nhận ở trạng thái mở.
+
+Nhánh docs đã commit/push lên `origin/docs/a2-29-traceability-handoff`. Lần tạo
+PR qua connector bị HTTP 403 `Resource not accessible by integration`; browser
+host/native pipe không khả dụng. Chưa có PR/CI mới hoặc reviewer approval.
+Link mở PR và nội dung mô tả nằm trong [PR docs](../../pr-a2-29.md).
