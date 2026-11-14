@@ -98,3 +98,11 @@ Chưa có dữ liệu story points theo ngày để tính velocity/burndown ho�
 | Thành viên 3 | Phần đóng góp/trình bày, phản hồi về Increment và cải tiến được đồng ý. | Chờ xác nhận. |
 
 **Trạng thái A2-29:** hồ sơ kỹ thuật và bằng chứng ba nhóm đóng góp đã được chuẩn bị; phần sự kiện và xác nhận còn mở. Chưa tự đánh dấu `Hoàn thành/Đạt` hoặc đóng Gate Task 5.
+
+<!-- A2-29 FINAL HANDOVER APPENDIX 2026-11-15 -->
+
+## Cập nhật minh chứng cuối Sprint 2 (15/11/2026)
+
+Các nhận xét về lỗi DB và E2E trong bảng Sprint 2 ở trên là **kết quả baseline**; sau các PR/fix, log developer ghi nhận full PostgreSQL regression 165/165 PASS, browser E2E local 5/5 checkpoint PASS, và bản UI production `52e0883` đã deploy/smoke PASS qua [CD run #43625066012](https://github.com/ncd426/BrewLite-2/actions/runs/43625066012). Người chạy báo demo thủ công trên Render thành công. Xem [A2-29 evidence](../evidence/sprint-2/a2-29-delivery-evidence-2026-11-15.md) và [A2-28 demo](../evidence/sprint-2/a2-28-production-demo.md).
+
+**Đây chưa phải biên bản Review/Retrospective được nhóm duyệt**. Ngày giờ thực tế, ý kiến stakeholder, quyết định và xác nhận của Danh/Bảo/Khoa phải được điền vào [mẫu sign-off](a2-29-review-signoff.md) và xác thực bằng comment/PR. Không tự chuyển trạng thái review sang Đạt chỉ vì code/test/deploy PASS.

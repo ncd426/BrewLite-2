@@ -146,3 +146,19 @@ Lint/build, smoke deploy, rollback nằm trong [README](../README.md), [deployme
 [e2e]: ../tests/e2e/order-flow.e2e-spec.ts
 [verification]: evidence/sprint-2/system-verification-2026-11-14.md
 [cd-evidence]: evidence/sprint-2/a2-25-ci-cd-production.md
+
+<!-- A2-29 FINAL HANDOVER APPENDIX 2026-11-15 -->
+
+## Bổ sung A2-29 — Minh chứng sau khi sửa và triển khai (15/11/2026)
+
+**Phần bảng phía trên lưu trạng thái baseline/truy vết lịch sử; những câu như “còn lỗi”, “chưa có E2E” phản ánh thời điểm chạy trước khi sửa.** [Bằng chứng mới](evidence/sprint-2/a2-29-delivery-evidence-2026-11-15.md) tách kết quả kiểm thử kỹ thuật khỏi điều kiện nghiệm thu của giảng viên.
+
+| FR/NFR và gap liên quan | Kết quả mới có chứng cứ | Điều chưa được tự động kết luận |
+| --- | --- | --- |
+| FR-01/02/03/04/05/07 | Browser local 5/5 checkpoints PASS, operator báo demo production thành công, `/products` trả 8 sản phẩm ở preflight | Ảnh/video và từng AC của SRS cần xác nhận trong biên bản A2-28 |
+| FR-05, FR-08, G-11 | 10-buyer contention local 3/3 rounds PASS; full DB regression 165/165 PASS | Không coi kết quả này là test tải 100 người dùng trong 10 phút |
+| FR-06, G-05/G-10 | Có regression idempotency same-key sau `PAID`; local full DB 165/165 PASS và API E2E với **signed simulated VNPay IPN** | Chưa chứng minh tiền ngân hàng thật; hosted VNPay Sandbox cần video/phản hồi để review |
+| FR-09/10 | Có kiểm thử mã khuyến mãi/loyalty trong full DB suite theo bộ test hiện có | Không ngầm xác nhận mọi AC ngoài phạm vi case được test |
+| NFR-03/04, G-02/G-03/G-06 | Sơ đồ đã được sửa/đồng bộ qua PR #58; CD deploy+smoke Render SHA `52e0883` PASS; production có backup custom archive/restore thử 9 migrations | NFR-01 performance và production DB network/secret security cần đối chiếu; Sprint Review/Retro chưa có xác nhận |
+
+Phần khác biệt baseline REQ/FR và các gap G-01/G-04/G-07/G-08/G-09 vẫn cần review có nguồn; **không đổi tên ID hoặc tự kết luận mọi AC PASS**. Đối chiếu video/nghiệm thu ở [A2-28](evidence/sprint-2/a2-28-production-demo.md), [Sprint sign-off](team/a2-29-review-signoff.md), [Checklist A2-30](evidence/sprint-2/a2-30-submission.md).
