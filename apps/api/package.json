@@ -23,7 +23,7 @@
     "test:debug": "node --inspect-brk --experimental-vm-modules -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:db:setup": "node prisma/test-db.mjs",
     "test:isolated": "node prisma/run-isolated-tests.mjs unit",
-    "test:e2e": "node prisma/run-isolated-tests.mjs e2e tests/e2e/jest-e2e.json"
+    "test:e2e": "node prisma/run-isolated-tests.mjs e2e ../../tests/e2e/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

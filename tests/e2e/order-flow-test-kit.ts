@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import { PrismaService } from "../../src/prisma/prisma.service";
-import { AppModule } from "../../src/app.module";
+import { PrismaService } from "../../apps/api/src/prisma/prisma.service";
+import { AppModule } from "../../apps/api/src/app.module";
 import request from "supertest";
 import { App } from "supertest/types";
 import { randomUUID } from "node:crypto";

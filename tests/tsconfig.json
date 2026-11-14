@@ -1,0 +1,15 @@
+{
+  "extends": "../apps/api/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true,
+    "incremental": false,
+    "typeRoots": ["../apps/api/node_modules/@types"],
+    "paths": {
+      "@nestjs/*": ["../apps/api/node_modules/@nestjs/*"],
+      "supertest": ["../apps/api/node_modules/@types/supertest"],
+      "supertest/*": ["../apps/api/node_modules/@types/supertest/*"]
+    }
+  },
+  "include": ["e2e/**/*.ts"]
+}
