@@ -389,3 +389,18 @@ vi MVP có checkout online qua **VNPay Sandbox** và bán tại quầy dùng xá
 nhận mô phỏng. Sau khi build và test, nhóm cần tạo Pull
 Request, review/merge và chuẩn bị Sprint Review/Retrospective theo quy trình
 Scrum; các bước quy trình này không được tự động hoàn thành bởi việc test PASS.
+
+<!-- A2-29 FINAL HANDOVER APPENDIX 2026-11-15 -->
+
+**Muc luc theo Task 1-5:** [Submission map](docs/README.md) - vi tri tai lieu, UML, evidence, cac gate dang cho xac nhan.
+
+## Assignment 2 — Bản production và hồ sơ bàn giao cuối kỳ (15/11/2026)
+
+**Phiên bản app đã triển khai:** `52e0883a081422a9718f51097a32f44b301d9850` (PR [#59](https://github.com/ncd426/BrewLite-2/pull/59)). GitHub [CD run #43625066012](https://github.com/ncd426/BrewLite-2/actions/runs/43625066012) ghi nhận quality/publish/Render deploy+smoke thành công theo log operator; ứng dụng chạy tại [Web HTTPS](https://brewlite-2-web.onrender.com) và [API health](https://brewlite-api-49rx.onrender.com/health). Các kết quả lỗi trong báo cáo baseline 14/11 phản ánh **trước khi sửa**; xem [bằng chứng A2-29 hiện tại](docs/evidence/sprint-2/a2-29-delivery-evidence-2026-11-15.md) để phân biệt với lần kiểm thử local 165/165 PASS và demo production do người chạy xác nhận.
+
+- [A2-28 — Video và biên bản kiểm thử desktop/mobile](docs/evidence/sprint-2/a2-28-production-demo.md) (đang bổ sung video/link chia sẻ).
+- [A2-29 — Bằng chứng production, CI/CD, DB/rollback, giới hạn và việc cần xác nhận](docs/evidence/sprint-2/a2-29-delivery-evidence-2026-11-15.md).
+- [Sprint Review/Retrospective — Biên bản cần nhóm xác nhận](docs/team/a2-29-review-signoff.md).
+- [A2-30 — Checklist 9 mục nộp bài](docs/evidence/sprint-2/a2-30-submission.md) và [release notes](docs/releases/v1.0.0-a2.md).
+
+**Phân biệt:** Merge tài liệu A2-29 sau này tạo một SHA mới trên `main`, **không tự đổi phiên bản app đang Live**. Chỉ ghi một app SHA mới khi có CD deploy và kiểm tra digest Render tương ứng. Các yêu cầu chưa kiểm chứng như DB networking và NFR load test chưa được tự đánh dấu đạt.
