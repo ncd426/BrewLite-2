@@ -7,13 +7,14 @@ flowchart LR
     API[NestJS API<br/>apps/api]
     Prisma[Prisma ORM]
     DB[(PostgreSQL)]
-    Payment[Mock payment flow]
+    Payment[VNPay Sandbox URL plus signed server-side IPN]
 
     Customer -->|HTTP| Web
     Web -->|REST API| API
     API --> Prisma
     Prisma --> DB
-    API --> Payment
+    API -->|Signed checkout URL| Payment
+    Payment -->|Signed IPN for verification| API
 ```
 
-For runtime and deployment notes, see [deployment.md](../deployment.md).
+The browser return from VNPay is not trusted to change `Payment`/`Order` into PAID. Only validated signed IPN can settle a payment. For runtime and the GHCR/Render topology, see [deployment.md](../deployment.md) and [deployment.svg](deployment.svg).

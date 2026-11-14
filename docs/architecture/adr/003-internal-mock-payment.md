@@ -1,6 +1,6 @@
 # ADR-003: Internal mock MOMO/CARD checkout for the MVP
 
-- **Status:** Accepted for the student MVP; no production payment provider is selected.
+- **Status:** Historical design accepted for the original mock-payment MVP; the current implementation uses VNPay Sandbox. [ADR-004](004-vnpay-sandbox-signed-ipn.md) documents the new approach and awaits formal team/reviewer approval.
 - **Context:** BrewLite must demonstrate the entire checkout workflow without collecting real money or requiring provider credentials. The current use-case specification has QR and card confirmation inside BrewLite.
 - **Decision:** Expose MOMO and CARD as simulated payment methods. Create an order in `PENDING`, then show the internal QR/card confirmation page; send `POST /payments` only after customer confirmation. Handle payment state, order state, ownership and `Idempotency-Key` inside the NestJS API. No calls to external MOMO/VNPay gateways or webhooks.
 - **Success path:** Persist payment `SUCCESS` and order `PAID`; redeem/award loyalty points once; update the paid items in the web cart; show order confirmation.

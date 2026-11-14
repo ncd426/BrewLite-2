@@ -41,7 +41,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const token = getAccessToken();
     if (!token) {
-      router.push('/login?redirect=/checkout');
+      router.push('/login?next=%2Fcheckout');
     } else {
       setIsCheckingAuth(false);
       fetchMyProfile()

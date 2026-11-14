@@ -8,28 +8,37 @@ skinparam usecase {
   BorderColor #315B4A
   ArrowColor #52685D
 }
-title BrewLite - Use Case chi tiet: Dat hang va thanh toan
+title BrewLite - Use Case chi tiet: Dat hang va thanh toan (VNPay Sandbox)
 
-actor "Khach hang\n(CUSTOMER da dang nhap)" as Customer
+actor "Khach hang\n(CUSTOMER)" as Customer
+actor "VNPay Sandbox\n(signed IPN)" as Provider
 
 rectangle "BrewLite Web + API" {
   usecase "Dat hang tu gio\n(POST /orders)" as PlaceOrder
   usecase "Xem truoc ma khuyen mai" as PreviewPromotion
   usecase "Xac thuc JWT, tai ho so\nva so du diem" as AuthProfile
   usecase "Kiem tra gio, san pham,\nsize va topping" as ValidateCart
-  usecase "Tinh gia va xac nhan\nkhuyen mai tu server" as CalculateAmount
+  usecase "Tinh gia va xac nhan\nkhuyen mai phia server" as CalculateAmount
   usecase "Kiem tra va tru ton\nnguyen lieu trong transaction" as CheckStock
   usecase "Tao Order / OrderItem\n(status = PENDING)" as SavePending
-  usecase "Xac nhan thanh toan mo phong\n(POST /payments)" as ConfirmPayment
-  usecase "Xac minh chu don, trang thai,\nso tien, diem va Idempotency-Key" as VerifyPayment
-  usecase "Ghi Payment va chuyen\ntrang thai Order" as RecordResult
-  usecase "Thu lai sau PAYMENT_FAILED\n(tao Idempotency-Key moi)" as RetryPayment
-  usecase "Thanh cong: Payment SUCCESS, Order PAID;\ntru diem neu dung, cong diem neu du dieu kien;\nxoa cac dong gio da mua; mo /checkout/success" as PaymentSuccess
-  usecase "That bai: Payment FAILED, Order PAYMENT_FAILED;\ngiu gio, hien loi va cho phep thu lai" as PaymentFailure
+  usecase "Tao phien VNPay Sandbox\n(POST /payments, PENDING)" as StartPayment
+  usecase "Xac minh chu don, so tien,\ndiem va Idempotency-Key" as VerifyPayment
+  usecase "Tiep nhan IPN\n(GET /payments/webhooks/vnpay)" as ReceiveIPN
+  usecase "Xac minh chu ky, merchant,\nma giao dich va so tien" as VerifyIPN
+  usecase "Chot Payment va cap nhat\ntrang thai Order" as RecordResult
+  usecase "Thu lai PAYMENT_FAILED\n(tao Idempotency-Key moi)" as RetryPayment
+  usecase "Thanh cong: Payment SUCCESS, Order PAID;\ntru diem neu dung, cong diem mot lan;\nxoa dong gio da mua, xem xac nhan" as PaymentSuccess
+  usecase "That bai: Payment FAILED, Order PAYMENT_FAILED;\ngiu gio va cho phep thu lai" as PaymentFailure
+  usecase "Xem trang thai va lich su don\n(GET /orders/me)" as ViewOrders
+  usecase "Huy don dang cho / loi\n(POST /orders/:id/cancel)" as CancelOrder
 }
 
 Customer --> PlaceOrder
-Customer --> ConfirmPayment
+Customer --> StartPayment
+Customer --> RetryPayment
+Customer --> ViewOrders
+Customer --> CancelOrder
+Provider --> ReceiveIPN
 
 PlaceOrder .> AuthProfile : <<include>>
 PlaceOrder .> ValidateCart : <<include>>
@@ -38,23 +47,29 @@ PlaceOrder .> CheckStock : <<include>>
 PlaceOrder .> SavePending : <<include>>
 PreviewPromotion .> PlaceOrder : <<extend>> [co ma khuyen mai]
 
-ConfirmPayment .> VerifyPayment : <<include>>
-ConfirmPayment .> RecordResult : <<include>>
-RetryPayment .> ConfirmPayment : <<extend>> [Order = PAYMENT_FAILED]
-PaymentSuccess .> RecordResult : <<extend>> [thanh cong]
-PaymentFailure .> RecordResult : <<extend>> [that bai]
+StartPayment .> VerifyPayment : <<include>>
+RetryPayment .> StartPayment : <<extend>> [don PAYMENT_FAILED]
+ReceiveIPN .> VerifyIPN : <<include>>
+ReceiveIPN .> RecordResult : <<include>> [IPN hop le]
+PaymentSuccess .> RecordResult : <<extend>> [IPN thanh cong]
+PaymentFailure .> RecordResult : <<extend>> [IPN that bai]
 
-note right of ConfirmPayment
-VNPay Sandbox: thanh toan qua QR cua nha cung cap.
-Chi IPN co chu ky hop le moi cap nhat trang thai don.
-Browser return khong tu xac nhan thanh toan.
-Doi diem: 1.000 VND/diem.
-Cong diem: 1 diem/10.000 VND da tra.
+note right of ReceiveIPN
+POST /payments chi tao payment PENDING va checkoutUrl.
+Chi signed IPN hop le moi duoc chot trang thai.
+Browser return khong chung minh da thanh toan.
+IPN sai chu ky/so tien bi tu choi, khong chot don.
 end note
 
 note bottom of CheckStock
-JWT hop le va gio co it nhat mot san pham.
-Ton bi tru khi tao don; hien khong tu hoan
-lai khi thanh toan that bai.
+Ton nguyen lieu tru khi tao don trong transaction.
+Payment FAILED khong tu dong hoan ton.
+Huy don hop le hoac phien PENDING het han co the
+huy don va hoan ton qua transaction.
+end note
+
+note bottom of RetryPayment
+Chi thu lai khi nguoi dung chu dong yeu cau,
+su dung key moi tren cung don PAYMENT_FAILED.
 end note
 @enduml

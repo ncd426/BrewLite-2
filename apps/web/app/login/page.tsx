@@ -29,7 +29,7 @@ export default function LoginPage() {
       const safeWorkNext = next === '/staff' || next === '/staff/sales' ||
         (next === '/admin' && profile.role === 'ADMIN');
       const safeCustomerNext = next && (
-        next === '/cart' || next === '/orders' ||
+        next === '/cart' || next === '/orders' || next === '/checkout' ||
         next.startsWith('/checkout/confirm?') || next.startsWith('/checkout/qr?') ||
         next.startsWith('/checkout/resume?')
       );

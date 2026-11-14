@@ -1,7 +1,7 @@
 # Sprint Review & Retrospective — BrewLite Assignment 2
 
 > **A2-29 · Bản tổng hợp kỹ thuật, chờ nhóm xác nhận.**
-> Baseline code: `506eaeb`. Tài liệu ghi nhận sản phẩm và đóng góp có thể đối chiếu trong repository. Thông tin cuộc họp, phản hồi và quyết định thực tế còn chờ xác nhận.
+> Baseline code: `506eaeb`. Tài liệu ghi nhận sản phẩm và đóng góp có thể đối chiếu trong repository. Thông tin cuộc họp, phản hồi và quyết định thực tế còn chờ xác nhận. [Retest 14/11 sau patch](../evidence/sprint-2/a2-29-retests-2026-11-14.md) có DB-01/DB-02 và API E2E riêng PASS theo log PowerShell do developer cung cấp; không thay thế full DB suite, browser E2E hoặc phê duyệt Sprint.
 
 ## Phạm vi và nguồn đối chiếu
 

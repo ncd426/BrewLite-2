@@ -1,6 +1,6 @@
 # Ma trận truy vết BrewLite — A2-29
 
-Baseline code `506eaeb`. Ma trận nối yêu cầu → use case/user story → UML → mã nguồn → kiểm thử. Có đường dẫn đến một test nghĩa là có kịch bản kiểm chứng trong repo; kết quả thực chạy, số test bị skip và giới hạn môi trường nằm trong [biên bản kiểm tra hệ thống][verification]. Không suy ra nghiệm thu toàn bộ AC từ một test backend hoặc một HTTP smoke thành công.
+Baseline code `506eaeb`. Ma trận nối yêu cầu → use case/user story → UML → mã nguồn → kiểm thử. Có đường dẫn đến một test nghĩa là có kịch bản kiểm chứng trong repo; kết quả thực chạy, số test bị skip và giới hạn môi trường nằm trong [biên bản kiểm tra hệ thống][verification]. Không suy ra nghiệm thu toàn bộ AC từ một test backend hoặc một HTTP smoke thành công. **Cập nhật sau bản sửa:** [retest DB-01/DB-02/A2-28 ngày 14/11](evidence/sprint-2/a2-29-retests-2026-11-14.md) ghi nhận các tập kiểm thử riêng PASS theo log PowerShell do developer gửi; bảng thất bại baseline bên dưới vẫn giữ nguyên cho tới khi chạy lại **full suite** với cùng một Git SHA.
 
 ## Nguồn và quy ước định danh
 
@@ -61,6 +61,20 @@ Bảng đối chiếu theo số story trong báo cáo A1 cục bộ, không tự
 | US-18 | Tích điểm sau thanh toán | FR-10; đổi điểm là khả năng hiện có được SRS mô tả thêm |
 | US-19 | Bảo mật, hiệu năng, khả dụng, giao diện | NFR-01…NFR-04; chưa có bằng chứng PWA offline/browser matrix đầy đủ |
 | US-20 | Vận hành nhân viên/barista | Ngoài MVP A1; hỗ trợ FR-08 |
+
+## Cập nhật trạng thái sau retest (14/11/2026)
+
+Các kết quả trong bảng **"Kết quả kiểm tra"** và G-02/G-03/G-06/G-10/G-11 bên dưới thuộc **lượt baseline cũ** tại commit `506eaeb`. Giữ bảng đó làm lịch sử lỗi, không sử dụng nó làm trạng thái mới nhất. Bản source được thu thập lúc 20:43 ngày 14/11 có HEAD `006e9f3`, nhưng các patch mới vẫn **chưa được commit**. Minh chứng user-shared: [A2-29 retests](evidence/sprint-2/a2-29-retests-2026-11-14.md).
+
+| Gap | Trạng thái mới hơn / kiểm chứng cần hoàn thành |
+| --- | --- |
+| G-02 | Đặc tả A2-04 và ba sơ đồ checkout A2-05/A2-07/A2-08 đã cập nhật tại local; vẫn cần review cặp `.puml`/`.svg` trên PR để chốt Gate Task 2. |
+| G-03 | Deployment diagram A2-14 đã áp dụng tại local; cần review và lưu commit/PR hợp lệ. |
+| G-05 | A2-23 đã bổ sung regression test same-key replay sau `PAID` và sửa thứ tự kiểm tra idempotency sau xác thực quyền sở hữu đơn; full DB local **165/165 PASS**. Chưa có CI/PR review cho commit cuối. |
+| G-06 | A2-28 API E2E và A2-30 Browser E2E đã PASS theo log developer gửi; đây là IPN mô phỏng local, **chưa phải video trên production URL**. |
+| G-10 | DB-01 13/13 tests PASS; full DB suite mới nhất **165/165 PASS** (đã thêm A2-23), không còn 404 fixture trong lượt chạy local. |
+| G-11 | DB-02 3/3 rounds PASS; full DB suite về sau PASS; cảnh báo `MaxListenersExceededWarning` vẫn cần lưu ý. |
+| G-07/G-09 | NFR tải 100 users / 10 phút, reviewer sign-off, video demo và release hiện vẫn thiếu minh chứng nghiệm thu. |
 
 ## Khoảng trống cần chốt khi review
 

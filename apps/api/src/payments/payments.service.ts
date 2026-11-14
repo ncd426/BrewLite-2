@@ -343,6 +343,23 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
           );
         }
 
+        // Resolve a matching idempotency key BEFORE checking order status.
+        // A retried request can arrive after a valid IPN has marked the
+        // original order PAID or after the original payment has expired.
+        // Ownership is checked first, so a replay never bypasses authorization.
+        const existing = await tx.payment.findUnique({
+          where: { idempotencyKey: key },
+        });
+        if (existing) {
+          return this.replayExistingPayment(
+            existing,
+            orderId,
+            amount,
+            method,
+            pointsToRedeem,
+          );
+        }
+
         if (
           order.status !== OrderStatus.PENDING &&
           order.status !== OrderStatus.PAYMENT_FAILED
@@ -367,21 +384,6 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
           if (!user || user.loyaltyPoints < pointsToRedeem) {
             throw new BadRequestException('Insufficient loyalty points');
           }
-        }
-
-        // Kiểm tra giao dịch có cùng idempotency key.
-        const existing = await tx.payment.findUnique({
-          where: { idempotencyKey: key },
-        });
-
-        if (existing) {
-          return this.replayExistingPayment(
-            existing,
-            orderId,
-            amount,
-            method,
-            pointsToRedeem,
-          );
         }
 
         const activePayment = await tx.payment.findFirst({

@@ -12,6 +12,7 @@ import request from 'supertest';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsController } from './payments.controller';
+import { PaymentsWebhookController } from './payments-webhook.controller';
 import { PaymentsService } from './payments.service';
 import { createSignedVnpayIpn } from './payment-test-utils';
 
@@ -38,7 +39,7 @@ dbDescribe('Loyalty redemption - PostgreSQL integration', () => {
     }
 
     const moduleRef = await Test.createTestingModule({
-      controllers: [PaymentsController],
+      controllers: [PaymentsController, PaymentsWebhookController],
       providers: [PaymentsService, PrismaService],
     })
       .overrideGuard(RolesGuard)

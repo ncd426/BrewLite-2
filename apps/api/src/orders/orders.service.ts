@@ -347,6 +347,12 @@ export class OrdersService {
         })),
       };
 
+    }, {
+      // A burst of concurrent checkout requests can exceed Prisma's short
+      // default transaction-acquisition wait while stock rows are locked.
+      // Keep the atomic stock decrement inside this transaction.
+      maxWait: 10000,
+      timeout: 10000,
     });
   }
 
