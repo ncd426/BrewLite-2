@@ -3,8 +3,9 @@
 Kết quả thực chạy và baseline tương ứng nằm trong
 [kiểm tra hệ thống](evidence/sprint-2/system-verification-2026-11-14.md).
 [Hồ sơ CI/CD](evidence/sprint-2/a2-25-ci-cd-production.md) đã ghi nhận GHCR/Render,
-thay cho mô tả hosting chưa chọn của bản cũ. [Deployment UML](diagrams/deployment.puml)
-và SVG còn ghi production TBD; cần cập nhật cả nguồn và hình trong PR thiết kế.
+thay cho mô tả hosting chưa chọn của bản cũ. [Deployment UML](diagrams/deployment.puml) và [SVG](diagrams/deployment.svg)
+mô tả cấu hình GHCR/Render được ghi nhận tại commit `8b9b060`; cần xác nhận
+đúng release SHA, quyền riêng tư database và backup trong đợt nghiệm thu hiện tại.
 
 ## Local bằng Docker Compose
 

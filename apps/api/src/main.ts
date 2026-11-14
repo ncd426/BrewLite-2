@@ -11,6 +11,12 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  await app.listen(4000);
+  // PORT allows isolated local test runners to avoid an already-running API.
+  // Normal application and Docker behavior remains on port 4000 by default.
+  const port = Number(process.env.PORT ?? 4000);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('PORT must be an integer between 1 and 65535');
+  }
+  await app.listen(port, process.env.APP_HOST ?? '0.0.0.0');
 }
 void bootstrap();

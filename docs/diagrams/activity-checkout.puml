@@ -1,135 +1,170 @@
 @startuml activity-checkout
-' Activity diagram for the current checkout API flow.
-' Failure branches describe supported behavior; verify them with the API tests.
+' A2-07 / Task 2.1: matched to current Next.js checkout + NestJS + signed VNPay IPN.
+' Production provider redirect is NOT authoritative; only verified IPN settles payment.
 !pragma useVerticalIf on
-skinparam BackgroundColor #FFFFFF
 skinparam shadowing false
-skinparam defaultFontName "DejaVu Sans"
 skinparam activity {
-  BackgroundColor #FFF9E9
-  BorderColor #9E501C
-  FontColor #283445
-  DiamondBackgroundColor #FFF0CA
-  DiamondBorderColor #A96520
-  ArrowColor #4E6178
-  StartColor #237A5E
-  EndColor #A84A44
-  BarColor #4E6178
+  BackgroundColor #F0F5FA
+  BorderColor #365675
+  FontColor #162B44
+  DiamondBackgroundColor #FFF2D6
+  DiamondBorderColor #A56816
+  BarColor #356E82
 }
-skinparam ArrowFontColor #334155
-skinparam TitleFontColor #1D3553
+skinparam ArrowColor #43617D
+skinparam DefaultFontName Arial
 
-title A2-07 - Activity Diagram: Đặt hàng và thanh toán BrewLite\n(Menu -> Chi tiết -> Giỏ hàng -> Đặt đơn -> VNPay Sandbox -> Theo dõi)
+title A2-07 - BrewLite Activity: Menu -> Checkout -> VNPay IPN -> Order history
 
 |Khách hàng|
 start
-:Mở BrewLite; xem menu;
-|Next.js (Frontend)|
-:Gọi GET /products;\nHiển thị menu;
-|Khách hàng|
-:Chọn đồ uống, size, topping;\nThêm vào giỏ hàng;
-|Next.js (Frontend)|
-:Hiển thị giỏ và tổng tiền;
-if (Giỏ hàng trống?) then (Có)
+:Vào menu; chọn sản phẩm, size, topping;
+|Next.js UI|
+:Gọi GET /products (và /products/:id);
+:Thêm món và tính tạm tính vào giỏ;
+if (Giỏ hàng có món hợp lệ?) then (Không)
   :Thông báo giỏ trống;
   stop
-else (Không)
+else (Có)
 endif
 
 |Khách hàng|
-:Chọn Tiến hành thanh toán;
-|Next.js (Frontend)|
-if (Đã có access token?) then (Không)
-  :Chuyển đến /login?redirect=/checkout;
+:Chọn thanh toán;
+|Next.js UI|
+if (Có access token?) then (Không)
+  :Chuyển /login?next=%2Fcheckout;
   |Khách hàng|
-  :Đăng nhập;
-  |Next.js (Frontend)|
-  :Gửi POST /auth/login;
-  if (Đăng nhập thành công?) then (Không)
-    :Báo lỗi; giữ nguyên giỏ hàng;
+  :Đăng nhập hoặc đăng ký;
+  |Next.js UI|
+  :POST /auth/login hoặc /auth/register;
+  if (Xác thực thành công?) then (Không)
+    :Hiển thị lỗi; giữ nguyên giỏ;
     stop
   else (Có)
-    :Lưu access token;
+    :Lưu token; quay lại /checkout;
   endif
 else (Có)
 endif
-:Gửi GET /users/me;
-|NestJS API / PostgreSQL|
-:Xác thực JWT;\nTrả profile và loyaltyPoints;
-|Next.js (Frontend)|
-:Hiển thị điểm hiện có;
-|Khách hàng|
-:Kiểm tra món đã chọn;\nChọn VNPay Sandbox;\nCó thể dùng mã giảm giá / điểm thưởng;
-|Next.js (Frontend)|
-if (Có mã khuyến mãi?) then (Có)
-  :Gửi POST /orders/promotion-preview\n{ items, promotionCode };
-  |NestJS API / PostgreSQL|
-  :Tính quote từ giá server;\nKhông tạo đơn, không trừ tồn;
-  |Next.js (Frontend)|
-  :Hiển thị mức giảm và tổng tạm tính;
-else (Không)
-endif
-:Gửi POST /orders\n{ items, promotionCode? };
-|NestJS API / PostgreSQL|
-:Xác thực JWT;\nĐọc giá sản phẩm và công thức nguyên liệu;
-:Kiểm tra rồi trừ tồn nguyên liệu\ntrong transaction tạo đơn;
-if (Dữ liệu hợp lệ và đủ tồn?) then (Không)
-  :Rollback; không tạo đơn;
-  |Next.js (Frontend)|
-  :Hiển thị lỗi; giữ giỏ để chỉnh sửa;
+
+|Next.js UI|
+:GET /users/me (Bearer JWT); tải điểm;
+|NestJS API + PostgreSQL|
+:Xác minh JWT và vai trò CUSTOMER;
+if (JWT hợp lệ?) then (Không)
+  |Next.js UI|
+  :Yêu cầu đăng nhập lại; giữ giỏ;
   stop
 else (Có)
-  :Tính lại giá/khuyến mãi từ server;
-  :Tạo Order và OrderItem;\nTrạng thái PENDING;
+endif
+|Khách hàng|
+:Chọn mã giảm giá và/hoặc điểm (tùy chọn);
+|Next.js UI|
+if (Có mã giảm giá?) then (Có)
+  :POST /orders/promotion-preview;
+  |NestJS API + PostgreSQL|
+  :Kiểm tra mã, tính tiền từ dữ liệu server;
+  if (Mã hợp lệ?) then (Không)
+    |Next.js UI|
+    :Báo lỗi; yêu cầu sửa/xóa mã;
+    stop
+  else (Có)
+    |Next.js UI|
+    :Hiển thị quote sau giảm;
+  endif
+else (Không)
 endif
 
-|Next.js (Frontend)|
-if (Tạo được phiên VNPay?) then (Có)
-  :Hiển thị /checkout/qr;\nQR mở phiên thanh toán VNPay;
-  |Khách hàng|
-  :Hoàn tất thanh toán trên VNPay Sandbox;
-else (Không)
-  |Next.js (Frontend)|
-  :Hiển thị lỗi tạo phiên thanh toán;
-  stop
-endif
-:Gọi GET /orders/:id để tải chi tiết;
-|NestJS API / PostgreSQL|
-:Kiểm tra quyền sở hữu;\nTrả chi tiết đơn;
-|Khách hàng|
-:Xem lại đơn và xác nhận thanh toán mô phỏng;
-|Next.js (Frontend)|
-:Lấy/tạo Idempotency-Key;
-:Gửi POST /payments\n{ orderId, method, pointsToRedeem }\nHeader: Idempotency-Key;
-|NestJS API / PostgreSQL|
-:Kiểm tra Idempotency-Key;\nTránh ghi nhận thanh toán trùng;
- :Chờ IPN VNPay có chữ ký hợp lệ;
-if (IPN xác thực thành công?) then (Không)
-  :Payment FAILED; Order PAYMENT_FAILED;
-  |Next.js (Frontend)|
-  :Thông báo lỗi / cho phép thử lại;\nKHÔNG xóa giỏ hàng;
+|Next.js UI|
+:Kiểm tra điểm và gửi POST /orders;
+|NestJS API + PostgreSQL|
+:Validate DTO/JWT; BEGIN transaction;
+:Đọc giá và công thức; trừ tồn nguyên liệu có điều kiện;
+if (Đủ tồn và dữ liệu hợp lệ?) then (Không)
+  :ROLLBACK; không tạo Order;
+  |Next.js UI|
+  :Hiển thị lỗi; giữ món trong giỏ;
   stop
 else (Có)
+  :Tạo Order + OrderItem (PENDING); COMMIT;
+endif
+|Next.js UI|
+:Chuyển /checkout/qr?orderId=...;
+:GET /orders/:id; tạo UUID Idempotency-Key;
+:Gửi POST /payments (VNPAY, pointsToRedeem);
+|NestJS API + PostgreSQL|
+:Xác thực JWT/chủ đơn/số tiền/điểm;
+:Transaction kiểm tra key và payment đang hoạt động;
+if (Key cũ hoặc phiên PENDING khớp?) then (Có)
+  :Trả phiên hiện có, không tạo payment mới;
+else (Không)
+  :Tạo Payment PENDING và thời hạn;
+  :Sinh checkoutUrl có chữ ký VNPay;
+endif
+if (Tạo phiên được?) then (Không)
+  :Đánh dấu lỗi khởi tạo phiên (nếu đã tạo Payment);
+  |Next.js UI|
+  :Báo lỗi; không coi là đã thanh toán;
+  stop
+else (Có)
+endif
+|Next.js UI|
+:Hiển thị QR và link VNPay;
+|Khách hàng|
+:Mở và thực hiện giao dịch ở VNPay Sandbox;
+|VNPay Sandbox|
+:Gửi browser return (chỉ điều hướng);
+:Gửi IPN đến GET /payments/webhooks/vnpay;
+|NestJS API + PostgreSQL|
+:Kiểm tra chữ ký, TmnCode, TxnRef và số tiền;
+if (IPN hợp lệ?) then (Không)
+  :Trả lỗi IPN; không xác nhận PAID;
+  |Next.js UI|
+  :Tiếp tục poll, chờ IPN hợp lệ/hết hạn;
+  stop
+else (Có)
+endif
+:BEGIN settlement transaction; chỉ xử lý PENDING;
+if (Phiên đã hết hạn?) then (Có)
+  :Payment FAILED; Order CANCELLED;
+  :Hoàn tồn theo nghiệp vụ hủy đơn
+  (do IPN hoặc job quét hạn);
+  |Next.js UI|
+  :Hiển thị đơn đã hủy / đặt lại;
+  stop
+else (Không)
+endif
+if (VNPay báo thành công?) then (Có)
   :Payment SUCCESS; Order PAID;
-endif
-
-|Next.js (Frontend)|
-if (Kết quả trả về PAYMENT_FAILED?) then (Có)
-  :Giữ giỏ hàng;\nCho phép thử lại với key mới;
-  stop
+  :Trừ điểm đổi (nếu có); cộng điểm thưởng một lần;
 else (Không)
+  :Payment FAILED; Order PAYMENT_FAILED;
 endif
-:Xóa các mặt hàng đã mua khỏi giỏ;
-:Hiển thị /checkout/success?orderId=...;
+:COMMIT; trả RspCode cho VNPay;
+|Next.js UI|
+:Poll GET /orders/:id mỗi 3 giây;
+if (Order PAID?) then (Có)
+  :Xóa CHỈ các món đã mua khỏi giỏ;
+  :Chuyển /checkout/success?orderId=...;
+else (Không)
+  if (Order PAYMENT_FAILED?) then (Có)
+    :Giữ giỏ; hiện nút Thử lại;
+    |Khách hàng|
+    :Nếu thử lại: chủ động gửi key MỚI;
+    |NestJS API + PostgreSQL|
+    :Payment mới PENDING; Order trở lại PENDING;
+    stop
+  else (Vẫn PENDING)
+    |Next.js UI|
+    :Không tự xác nhận từ browser return;
+    stop
+  endif
+endif
 |Khách hàng|
-:Mở lịch sử để theo dõi trạng thái đơn;
-|Next.js (Frontend)|
+:Xem lịch sử đơn;
+|Next.js UI|
 :Gọi GET /orders/me;
-|NestJS API / PostgreSQL|
-:Trả { userId, orders } của người dùng;
-|Next.js (Frontend)|
-:Hiển thị trạng thái mới nhất:\nPENDING / PAID / PAYMENT_FAILED /\nPREPARING / READY / COMPLETED / CANCELLED;
+|NestJS API + PostgreSQL|
+:Trả lịch sử và trạng thái mới nhất;
 |Khách hàng|
 stop
-
 @enduml

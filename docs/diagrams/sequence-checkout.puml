@@ -1,152 +1,166 @@
 @startuml sequence-checkout
+' A2-08 / Task 2.2: verified against OrdersController, PaymentsService and Next.js QR page.
+' Payment creation is PENDING; signed IPN is the ONLY settlement authority.
+
 autonumber
-skinparam BoxPadding 15
-skinparam ParticipantPadding 10
-skinparam ResponseMessageBelowArrow true
-skinparam style strictuml
+skinparam shadowing false
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ArrowColor #3B5975
+  LifeLineBorderColor #73869D
+  ParticipantBorderColor #3B5975
+  ParticipantBackgroundColor #EBF3FC
+  ActorBorderColor #3B5975
+  GroupBorderColor #A0B3C8
+  GroupBackgroundColor #F8FAFD
+  GroupHeaderFontColor #1B3A57
+}
+skinparam DefaultFontName Arial
 
-title Sequence Diagram: Đặt hàng & Thanh toán mô phỏng (BrewLite)
+title A2-08 - Sequence: Checkout -> VNPay Sandbox signed IPN -> Order history
 
-actor "Customer" as User
-box "Frontend" #EBF5FB
-    participant "Next.js (Web)" as Client
-end box
+actor "Customer" as C
+participant "Next.js UI" as Web
+participant "NestJS API\nAuth / Orders / Webhooks" as API
+participant "PaymentsService\nNestJS" as Pay
+ database "PostgreSQL\nPrisma" as DB
+participant "VNPay Sandbox" as VNP
 
-box "Backend (NestJS)" #FEF9E7
-    participant "AuthController" as AuthController
-    participant "UsersController" as UsersController
-    participant "OrdersController" as OrdersController
-    participant "Order Service" as OrderSvc
-    participant "PaymentsController" as PaymentsController
-    participant "Payment Service" as PaySvc
-end box
-
-database "PostgreSQL (Prisma)" as DB
-
-== 1. Tải thông tin checkout ==
-User -> Client: Mở /checkout
-activate Client
-alt Chưa có access token
-    Client --> User: Chuyển sang /login?redirect=/checkout
-    User -> Client: Đăng nhập
-    Client -> AuthController: POST /auth/login\n{ email, password }
-    AuthController -> DB: Tìm user; xác thực mật khẩu
-    DB --> AuthController: Kết quả xác thực
-    alt Đăng nhập thất bại
-        AuthController --> Client: 401 Unauthorized
-        Client --> User: Hiển thị lỗi; giữ nguyên giỏ hàng
-    else Đăng nhập thành công
-        AuthController --> Client: Access token
-        Client -> Client: Lưu access token
-    end
+== 1. Menu, checkout, JWT ==
+C -> Web: Mở menu; chọn size/topping; thêm giỏ
+Web -> API: GET /products, GET /products/:id
+API -> DB: Đọc menu và giá
+DB --> API: Dữ liệu sản phẩm
+API --> Web: 200 menu / detail
+C -> Web: Tiến hành thanh toán
+alt Chưa đăng nhập
+  Web --> C: /login?next=%2Fcheckout
+  C -> Web: Đăng nhập / đăng ký
+  Web -> API: POST /auth/login hoặc /auth/register
+  API -> DB: Validate thông tin + mật khẩu
+  alt Đăng nhập lỗi
+    API --> Web: 401 / 4xx
+    Web --> C: Báo lỗi; giữ giỏ (không đặt đơn)
+  else Thành công
+    API --> Web: Access token
+    Web -> Web: Lưu token; quay lại /checkout
+  end
+end
+Web -> API: GET /users/me (Bearer JWT)
+alt JWT/role không hợp lệ
+  API --> Web: 401 / 403; yêu cầu xác thực lại
+else JWT hợp lệ, CUSTOMER
+  API -> DB: Đọc loyaltyPoints
+  DB --> API: Profile
+  API --> Web: 200 (profile, points)
 end
 
-Client -> UsersController: GET /users/me\nAuthorization: Bearer <JWT>
-activate UsersController
-alt JWT không hợp lệ/hết hạn
-    UsersController --> Client: 401 Unauthorized
-    Client -> Client: Xóa access token
-    Client --> User: Hiển thị lỗi xác thực
-else JWT hợp lệ
-    UsersController -> DB: Đọc hồ sơ người dùng và loyaltyPoints
-    DB --> UsersController: User profile
-    UsersController --> Client: 200 OK (profile, loyaltyPoints)
-    Client --> User: Hiển thị giỏ hàng, điểm và tùy chọn checkout
+== 2. Kiểm tra khuyến mãi và tạo đơn ==
+opt Khách nhập mã khuyến mãi
+  Web -> API: POST /orders/promotion-preview
+  API -> DB: Xác thực mã, tính quote theo giá server
+  API --> Web: Quote hoặc lỗi 4xx (không tạo Order)
 end
-deactivate UsersController
-deactivate Client
-
-== 2. Đặt hàng & Thực hiện thanh toán ==
-User -> Client: Chọn VNPay Sandbox & Xác nhận thanh toán
-activate Client
-opt Xem trước mã khuyến mãi
-    Client -> OrdersController: POST /orders/promotion-preview\n{ items, promotionCode }
-    activate OrdersController
-    OrdersController -> DB: Đọc giá sản phẩm và quy tắc khuyến mãi
-    DB --> OrdersController: Promotion quote
-    OrdersController --> Client: 201 Created (subtotal, discountAmount, total)
-    deactivate OrdersController
+C -> Web: Chốt giỏ và điểm thưởng tùy chọn
+Web -> API: POST /orders + Bearer JWT (items, promotionCode?)
+API -> DB: BEGIN; validate DTO/giá; kiểm tra và trừ tồn nguyên liệu
+alt Hết hàng / invalid input
+  DB --> API: Không thể trừ đủ tồn; ROLLBACK
+  API --> Web: 4xx; không tạo Order
+  Web --> C: Báo lỗi; giữ giỏ hàng
+else Đủ tồn
+  API -> DB: Tạo Order + OrderItem, status=PENDING; COMMIT
+  DB --> API: Order ID + tổng tiền tính trên server
+  API --> Web: 201 (orderId, status=PENDING, total)
 end
 
-Client -> OrdersController: POST /orders\n{ items, promotionCode? }\nAuthorization: Bearer <JWT>
-activate OrdersController
-OrdersController -> OrderSvc: create(userId, items, promotionCode?)
-activate OrderSvc
-OrderSvc -> DB: BEGIN TRANSACTION
-OrderSvc -> DB: Đọc sản phẩm, giá và công thức nguyên liệu
-DB --> OrderSvc: Product prices and ingredient requirements
-OrderSvc -> DB: Kiểm tra và trừ tồn nguyên liệu có điều kiện
-alt Thiếu tồn kho hoặc dữ liệu không hợp lệ
-    OrderSvc -> DB: ROLLBACK
-    OrderSvc --> OrdersController: 400 Bad Request
-    OrdersController --> Client: 400 (không tạo đơn)
-    Client --> User: Báo lỗi; giữ giỏ để chỉnh sửa
-else Đủ tồn kho
-    OrderSvc -> DB: Tính giá/khuyến mãi phía server;\nTạo Order, OrderItem (PENDING)
-    DB --> OrderSvc: Order and items
-    OrderSvc -> DB: COMMIT
-    OrderSvc --> OrdersController: { orderId, status, subtotal,\ndiscountAmount, total, items }
-    OrdersController --> Client: 201 Created (order details)
-    deactivate OrderSvc
-    deactivate OrdersController
-
-    == 3. Xác nhận đơn và thanh toán mô phỏng ==
-    Client -> Client: Điều hướng /checkout/qr hoặc /checkout/confirm
-    Client -> OrdersController: GET /orders/:id\nAuthorization: Bearer <JWT>
-    activate OrdersController
-    OrdersController -> OrderSvc: getOrderById(userId, orderId)
-    activate OrderSvc
-    OrderSvc -> DB: Đọc đơn thuộc người dùng hiện tại
-    DB --> OrderSvc: Order, items and current status
-    OrderSvc --> OrdersController: Order details
-    OrdersController --> Client: 200 OK (order details)
-    deactivate OrderSvc
-    deactivate OrdersController
-    User -> Client: Xác nhận thanh toán mô phỏng
-    Client -> Client: Lấy/tạo UUID lưu trong sessionStorage
-    Client -> PaymentsController: POST /payments\nIdempotency-Key: <UUID>\n{ orderId, method, pointsToRedeem }
-    activate PaymentsController
-    PaymentsController -> PaySvc: processPayment(userId, orderId,\nmethod, key, pointsToRedeem)
-    activate PaySvc
-    PaySvc -> DB: BEGIN TRANSACTION; đọc đơn, kiểm tra chủ sở hữu,\nkiểm tra số tiền và idempotency key
-    alt Key đã dùng với cùng dữ liệu
-        DB --> PaySvc: Payment hiện có
-        PaySvc --> PaymentsController: Kết quả cũ (không tạo payment mới)
-        PaymentsController --> Client: 201 Created (kết quả trước đó)
-    else Key mới, simulateFailure=true (chỉ môi trường không production)
-        PaySvc -> DB: Tạo Payment FAILED;\nOrder chuyển PAYMENT_FAILED
-        PaySvc -> DB: COMMIT\n(không trừ điểm; tồn kho đã trừ khi tạo đơn)
-        PaySvc --> PaymentsController: 201 Created\n{ status: PAYMENT_FAILED, paymentStatus: FAILED }
-        PaymentsController --> Client: 201 Created (thanh toán thất bại)
-    else Key mới, thanh toán mô phỏng thành công (mặc định)
-        PaySvc -> DB: Tạo Payment SUCCESS; Order chuyển PAID
-        PaySvc -> DB: Trừ pointsToRedeem và cộng điểm thưởng\n(mỗi đơn một lần)
-        PaySvc -> DB: COMMIT
-        PaySvc --> PaymentsController: 201 Created\n{ status: PAID, paymentStatus: SUCCESS }
-        PaymentsController --> Client: 201 Created (thanh toán thành công)
-    end
-    deactivate PaySvc
-    deactivate PaymentsController
-    alt Response status = PAID
-        Client -> Client: Xóa các mặt hàng đã mua khỏi giỏ
-        Client --> User: Chuyển đến /checkout/success?orderId=...
-    else Response status = PAYMENT_FAILED
-        Client --> User: Báo lỗi; giữ mặt hàng trong giỏ
-    end
+== 3. Tạo phiên thanh toán - chưa phải PAID ==
+Web -> Web: Điều hướng /checkout/qr; sinh/lưu UUID key
+Web -> API: GET /orders/:id (JWT; kiểm tra chủ đơn)
+API -> DB: Tìm đơn ONLINE thuộc user
+DB --> API: Order PENDING hoặc lỗi truy cập
+API --> Web: Thông tin đơn
+Web -> API: POST /payments + Bearer JWT\nIdempotency-Key (orderId, VNPAY, pointsToRedeem)
+API -> Pay: processPayment(userId, orderId, key, points)
+Pay -> DB: BEGIN; validate chủ đơn, số tiền, điểm; tra key
+alt Key cũ hoặc Payment PENDING đang mở với cùng payload
+  DB --> Pay: Payment trước đó (replay, không tạo trùng)
+else Key mới và chưa có payment hoạt động
+  Pay -> DB: Tạo Payment PENDING, expiresAt (transaction)
+  DB --> Pay: Payment ID
+  Pay -> Pay: Sinh URL VNPay HMAC SHA-512\n(vnp_TxnRef=Payment ID)
+  Pay -> DB: Lưu checkoutUrl / providerReference
+else Key xung đột / tham số sai
+  Pay --> API: 400 / 409; không tạo payment mới
+  API --> Web: Báo lỗi; không tự đánh dấu PAID
 end
-deactivate Client
+Pay --> API: Payment PENDING + checkoutUrl (hoặc lỗi)
+API --> Web: 201 PENDING + checkoutUrl
+Web --> C: QR/link VNPay (KHÔNG tự ghi PAID)
 
-== 4. Theo dõi đơn ==
-User -> Client: Mở lịch sử đơn hàng
-Client -> OrdersController: GET /orders/me\nAuthorization: Bearer <JWT>
-activate OrdersController
-OrdersController -> OrderSvc: getMyOrders(userId)
-activate OrderSvc
-OrderSvc -> DB: Đọc lịch sử đơn của người dùng
-DB --> OrderSvc: Orders and latest statuses
-OrderSvc --> OrdersController: { userId, orders }
-OrdersController --> Client: 200 OK (order history)
-deactivate OrderSvc
-deactivate OrdersController
-Client --> User: Hiển thị mã ID, tổng tiền và trạng thái mới nhất
+== 4. Browser return độc lập với IPN ==
+C -> VNP: Mở link, thực hiện thanh toán Sandbox
+VNP --> Web: Redirect browser về /checkout/qr\n(vnp_ResponseCode...)
+Web -> API: GET /orders/:id mỗi 3 giây
+API -> DB: Đọc trạng thái đơn
+DB --> API: PENDING / PAID / PAYMENT_FAILED / CANCELLED
+API --> Web: Trạng thái hiện có; return không cập nhật DB
+
+== 5. VNPay IPN có chữ ký xác nhận kết quả ==
+VNP -> API: GET /payments/webhooks/vnpay\n(vnp_SecureHash, TmnCode, TxnRef, Amount, Status)
+API -> Pay: handleVnpayIpn(params)
+Pay -> Pay: Verify chữ ký HMAC, merchant/TmnCode
+alt Sai chữ ký / merchant / ref / amount
+  Pay --> API: RspCode 97 / 01 / 04; không chốt giao dịch
+  API --> VNP: RspCode lỗi
+else IPN hợp lệ
+  Pay -> DB: Transaction; khóa logic theo Payment PENDING
+  alt Payment đã xử lý
+    DB --> Pay: Duplicate; không cộng điểm/trừ tiền lần nữa
+  else Hết hạn
+    Pay -> DB: Payment FAILED; Order CANCELLED; hoàn tồn
+  else VNPay success (ResponseCode = 00, TxnStatus = 00)
+    Pay -> DB: Payment SUCCESS; Order PAID\nTrừ điểm đổi; cộng loyalty một lần
+  else VNPay failure
+    Pay -> DB: Payment FAILED; Order PAYMENT_FAILED
+  end
+  DB --> Pay: Kết quả settlement
+  Pay --> API: RspCode 00 hoặc 02 (expired)
+  API --> VNP: JSON xác nhận IPN
+end
+
+== 6. Hết hạn độc lập và UI polling ==
+opt Job quét Payment PENDING hết hạn (không cần IPN)
+  Pay -> Pay: expirePendingPayments() mỗi 15 giây
+  Pay -> DB: Payment FAILED, Order CANCELLED; hoàn tồn
+end
+loop Poll GET /orders/:id mỗi 3 giây
+  Web -> API: GET /orders/:id (JWT)
+  API -> DB: Đọc đơn của user
+  DB --> API: Latest order status
+  API --> Web: 200
+end
+alt PAID
+  Web -> Web: Xóa chỉ các món đã mua khỏi giỏ
+  Web --> C: /checkout/success?orderId=...
+else PAYMENT_FAILED
+  Web --> C: Giữ giỏ; hiện Thử lại
+  opt Customer chủ động thử lại
+    C -> Web: Click Thử lại; tạo UUID mới
+    Web -> API: POST /payments, Idempotency-Key MỚI
+    API -> Pay: Tạo attempt PENDING mới
+    Pay -> DB: Payment PENDING; Order PAYMENT_FAILED -> PENDING
+    Pay --> Web: Phiên VNPay mới; chưa phải PAID
+  end
+else PENDING / chưa có IPN hợp lệ
+  Web --> C: Chờ xác nhận, KHÔNG tự đặt PAID
+else CANCELLED do timeout
+  Web --> C: Phiên hết hạn / đặt đơn mới
+end
+C -> Web: Mở lịch sử đơn
+Web -> API: GET /orders/me (JWT)
+API -> DB: Đọc lịch sử ORDER ONLINE của user
+DB --> API: Đơn, trạng thái mới nhất
+API --> Web: 200 danh sách
+Web --> C: Theo dõi PAID/PREPARING/READY/COMPLETED...
 @enduml

@@ -16,6 +16,7 @@ import request from 'supertest';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsController } from './payments.controller';
+import { PaymentsWebhookController } from './payments-webhook.controller';
 import { PaymentsService } from './payments.service';
 import { createSignedVnpayIpn } from './payment-test-utils';
 
@@ -40,7 +41,7 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
     }
 
     const moduleRef = await Test.createTestingModule({
-      controllers: [PaymentsController],
+      controllers: [PaymentsController, PaymentsWebhookController],
       providers: [
         PaymentsService,
         PrismaService,
@@ -174,6 +175,33 @@ dbDescribe('POST /payments - Idempotency Integration', () => {
       where: { id: orderId },
     });
 
+    expect(order?.status).toBe(OrderStatus.PAID);
+  });
+
+  it('same key after signed success IPN returns the settled payment without a new charge', async () => {
+    const key = randomUUID();
+    const body = { orderId, method: 'VNPAY' };
+
+    const started = await request(app.getHttpServer())
+      .post('/payments')
+      .set('Idempotency-Key', key)
+      .send(body)
+      .expect(201);
+
+    await notifyVnpay(started.body.id).expect(200);
+
+    const replayed = await request(app.getHttpServer())
+      .post('/payments')
+      .set('Idempotency-Key', key)
+      .send(body)
+      .expect(201);
+
+    expect(replayed.body.id).toBe(started.body.id);
+    expect(replayed.body.paymentStatus).toBe(PaymentStatus.SUCCESS);
+    expect(replayed.body.status).toBe(OrderStatus.PAID);
+    expect(await prisma.payment.count({ where: { orderId } })).toBe(1);
+
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
     expect(order?.status).toBe(OrderStatus.PAID);
   });
 

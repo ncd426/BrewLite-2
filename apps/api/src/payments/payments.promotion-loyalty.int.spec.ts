@@ -17,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OrdersController } from '../orders/orders.controller';
 import { OrdersService } from '../orders/orders.service';
 import { PaymentsController } from './payments.controller';
+import { PaymentsWebhookController } from './payments-webhook.controller';
 import { PaymentsService } from './payments.service';
 import { createSignedVnpayIpn } from './payment-test-utils';
 
@@ -54,7 +55,11 @@ dbDescribe('Promotion and loyalty - PostgreSQL integration', () => {
     }
 
     const moduleRef = await Test.createTestingModule({
-      controllers: [OrdersController, PaymentsController],
+      controllers: [
+        OrdersController,
+        PaymentsController,
+        PaymentsWebhookController,
+      ],
       providers: [
         OrdersService,
         PaymentsService,
@@ -349,11 +354,21 @@ dbDescribe('Promotion and loyalty - PostgreSQL integration', () => {
       })
       .expect(201);
 
-    await notifyVnpay(failedPayment.body.id, failedPayment.body.amount, false)
-      .expect(200);
+    // POST /payments returns a snapshot taken before the gateway callback.
+    expect(failedPayment.body.paymentStatus).toBe(PaymentStatus.PENDING);
 
-    expect(failedPayment.body.paymentStatus)
-      .toBe(PaymentStatus.FAILED);
+    const ipn = await notifyVnpay(
+      failedPayment.body.id,
+      failedPayment.body.amount,
+      false,
+    ).expect(200);
+    expect(ipn.body).toEqual({ RspCode: '00', Message: 'Confirm Success' });
+
+    // Re-read the persisted payment after the failed VNPay callback.
+    const payment = await prisma.payment.findUnique({
+      where: { id: failedPayment.body.id },
+    });
+    expect(payment?.status).toBe(PaymentStatus.FAILED);
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },

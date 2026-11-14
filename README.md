@@ -21,7 +21,10 @@ PostgreSQL. Prisma quản lý schema, migration và dữ liệu mẫu.
 - Checkout online qua VNPay Sandbox bằng QR/link; chỉ xác nhận thanh toán sau khi API kiểm tra IPN hợp lệ. Bán hàng tại quầy sử dụng xác nhận CASH/CARD mô phỏng.
 - Xác nhận đơn hàng, lịch sử mua hàng và số tiền thực trả.
 - Order State Machine, Idempotency-Key; transaction và trừ nguyên liệu có điều
-  kiện để bảo vệ tồn kho. Kiểm chứng cạnh tranh DB hiện còn lỗi, xem báo cáo test.
+  kiện để bảo vệ tồn kho. Các bản sửa trên máy phát triển đã được chạy lại với
+  PostgreSQL disposable: **25/25 test suites, 165/165 tests PASS** ngày
+  14/11/2026. Đây là bằng chứng local, chưa thay thế CI của PR hoặc nghiệm thu
+  production; xem [minh chứng retest](docs/evidence/sprint-2/a2-29-retests-2026-11-14.md).
 
 ## Chạy bằng Docker Compose
 
@@ -265,9 +268,12 @@ npm run test:e2e
 
 `test:db:setup` **reset toàn bộ DB test** trước khi chạy 9 migration và seed
 inventory. Guard của script chỉ cho phép `localhost`/`127.0.0.1:5434/brewlite_test`.
-Không dùng cổng này cho DB cần giữ. E2E ở `tests/e2e/` có 3 test với
-NestJS + PostgreSQL thật: đăng ký/JWT → menu → tạo đơn → chi tiết/lịch sử. Các
-test dừng ở đơn `PENDING`; chưa tự động chạy trình duyệt hoặc VNPay tới `PAID`.
+Không dùng cổng này cho DB cần giữ. E2E trong `tests/e2e/` gồm các test
+đăng ký/JWT → menu → tạo đơn → chi tiết/lịch sử và test
+`checkout-vnpay-paid.e2e-spec.ts` kiểm tra signed **IPN VNPay mô phỏng** đến
+`PAID` trên PostgreSQL test. Browser E2E tại `work/A2-30` đã PASS khi chạy
+trên máy phát triển, nhưng script/ảnh minh chứng local không được tự động
+commit và chưa xác nhận thanh toán VNPay Sandbox thật trên production.
 
 ### DB integration: cạnh tranh, idempotency, promotion, loyalty
 
@@ -291,8 +297,10 @@ npm test -- --runInBand
 ```
 
 Đóng terminal này khi kết thúc để các biến môi trường test không ảnh hưởng
-đến lần chạy khác. Kết quả kiểm thử, giới hạn bao phủ và lỗi còn mở được ghi
-trong [biên bản kiểm tra hệ thống](docs/evidence/sprint-2/system-verification-2026-11-14.md).
+đến lần chạy khác. [Biên bản baseline](docs/evidence/sprint-2/system-verification-2026-11-14.md)
+ghi lại các lỗi ban đầu; [minh chứng retest](docs/evidence/sprint-2/a2-29-retests-2026-11-14.md)
+ghi lần chạy local mới đạt 165/165 tests. Kết quả local không phải GitHub CI
+của một commit/PR mới.
 Khi Windows/OneDrive báo `EINVAL readlink` ở `.next`, dừng dev server, chuyển
 cache build cũ sang thư mục tạm rồi build lại; giữ source và file `.env`.
 
