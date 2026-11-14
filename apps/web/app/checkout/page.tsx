@@ -240,7 +240,7 @@ export default function CheckoutPage() {
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Phương thức thanh toán</h2>
             <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
               <p className="font-medium text-gray-900">VNPay QR</p>
-              <p className="text-xs text-gray-600">Thanh toán qua VNPay Sandbox</p>
+              <p className="text-xs text-gray-600">Cổng thanh toán VNPay · Môi trường Sandbox (không phát sinh tiền thật)</p>
             </div>
           </div>
         </div>

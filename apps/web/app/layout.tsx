@@ -6,12 +6,12 @@ import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'BrewLite',
-  description: 'Coffee ordering app built for a Scrum project',
+  description: 'BrewLite - Đặt đồ uống trực tuyến, theo dõi đơn hàng và quản lý cửa hàng.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <body className="bg-amber-50 text-slate-800">
         <Header />
         <WorkRouteAccess>{children}</WorkRouteAccess>

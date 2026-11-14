@@ -54,7 +54,7 @@ export function WorkRouteAccess({ children }: { children: React.ReactNode }) {
 
   if (access.path === pathname && access.failed) {
     return <main className="mx-auto max-w-xl px-4 py-16 text-center">
-      <p role="alert" className="text-sm text-red-700">Không kiểm tra được quyền truy cập. Kiểm tra Backend rồi tải lại trang.</p>
+      <p role="alert" className="text-sm text-red-700">Không thể xác minh quyền truy cập. Vui lòng thử lại sau ít phút.</p>
       <button type="button" onClick={() => window.location.reload()} className="mt-4 rounded-xl border px-4 py-2">Thử lại</button>
       <button type="button" onClick={() => { clearAccessToken(); window.location.replace('/login'); }} className="ml-2 mt-4 rounded-xl bg-amber-800 px-4 py-2 text-white">Đăng xuất</button>
     </main>;

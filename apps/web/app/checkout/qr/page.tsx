@@ -26,6 +26,17 @@ function toPoints(value: string | null): number | null {
   return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
+const ORDER_STATUS_NAMES: Record<string, string> = {
+  PENDING: 'Chờ thanh toán',
+  PAID: 'Đã thanh toán',
+  PAYMENT_FAILED: 'Thanh toán thất bại',
+  PREPARING: 'Đang pha chế',
+  READY: 'Sẵn sàng giao',
+  COMPLETED: 'Đã hoàn tất',
+  CANCELLED: 'Đã hủy',
+};
+const formatOrderStatus = (status: string) => ORDER_STATUS_NAMES[status] ?? status;
+
 function QrPaymentContent() {
   const router = useRouter();
   const query = useSearchParams();
@@ -158,15 +169,15 @@ function QrPaymentContent() {
       <div className="mt-5 rounded-2xl border border-amber-200 bg-white p-6 shadow-sm">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">BrewLite • Sandbox</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">BrewLite • Thanh toán đơn hàng</p>
             <h1 className="mt-1 text-2xl font-bold text-gray-900">Thanh toán VNPay QR</h1>
           </div>
           {orderId && <span className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-800">Đơn #{orderId}</span>}
         </div>
 
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-          Quét mã để mở cổng thanh toán sandbox. BrewLite chỉ cập nhật đơn sau khi nhận và xác thực
-          phản hồi IPN từ nhà cung cấp; quay lại trang này không tự xác nhận thanh toán.
+          Quét mã QR để tiếp tục thanh toán qua VNPay. Trạng thái đơn hàng sẽ được
+          cập nhật khi cổng thanh toán xác nhận giao dịch.
         </div>
 
         {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -179,7 +190,7 @@ function QrPaymentContent() {
               <div className="flex justify-between"><span>Giá trị đơn sau khuyến mãi</span><span>{order.total.toLocaleString('vi-VN')}đ</span></div>
               <div className="flex justify-between text-emerald-700"><span>Giảm từ {points} điểm</span><span>−{pointsDiscount.toLocaleString('vi-VN')}đ</span></div>
               <div className="flex justify-between border-t border-amber-200 pt-2 text-base font-bold"><span>Cần thanh toán</span><span>{Math.max(0, order.total - pointsDiscount).toLocaleString('vi-VN')}đ</span></div>
-              <div className="text-gray-500">Trạng thái: <strong>{order.status}</strong></div>
+              <div className="text-gray-500">Trạng thái: <strong>{formatOrderStatus(order.status)}</strong></div>
             </div>
           </section>
         )}
@@ -209,11 +220,10 @@ function QrPaymentContent() {
             ) : (
               <p className="text-center text-sm text-gray-500">
                 {returningFromVnpay
-                  ? 'Đang chờ VNPay xác nhận giao dịch qua IPN. Trang này không tự tạo lần thanh toán khác.'
+                  ? 'Đang chờ VNPay xác nhận giao dịch...'
                   : 'Đang tạo phiên thanh toán an toàn...'}
               </p>
             )}
-            <p className="text-xs text-gray-500">Trang này kiểm tra trạng thái đơn mỗi 3 giây.</p>
           </div>
         )}
 
