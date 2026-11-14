@@ -1,8 +1,7 @@
 ﻿# BrewLite — Prisma migration, seed và phục hồi DB
 
-Đối chiếu ngày 14/11/2026 tại `506eaeb`, Prisma 6/PostgreSQL 16. Runbook này
-thay hướng dẫn patch Product.version hai migration cũ. Giữ schema và toàn bộ
-SQL cùng release trong Git.
+Hướng dẫn sử dụng Prisma 6/PostgreSQL 16 với schema hiện tại. Giữ schema và
+toàn bộ SQL cùng release trong Git.
 
 ## Chín migration hiện tại
 
@@ -82,14 +81,14 @@ Seed từ chối `NODE_ENV=production`.
   `RUN_DB_INTEGRATION=1`; không bật cờ qua runner bị giới hạn ở `brewlite_test`.
 
 Lượt kiểm tra A2-29 tái tạo DB disposable với 9 migration/seed, chạy test và
-cleanup. [Báo cáo ngày 14/11](evidence/sprint-2/system-verification-2026-11-14.md)
+cleanup. [Báo cáo kiểm tra hệ thống](evidence/sprint-2/system-verification-2026-11-14.md)
 ghi kết quả và các test thất bại; bằng chứng local không thay migration production.
 
 ## Production, backup và phục hồi
 
-Khoa phụ trách DB/migration, Danh review A2-27 theo backlog. Trước mỗi release
-cần ghi SHA, migration đang có/còn thiếu, tương thích image trước/sau, lịch
-bảo trì nếu cần, nơi lưu backup, người phục hồi và kết quả restore thử.
+Hạng mục A2-27 cần người phụ trách DB/migration và người review xác nhận.
+Trước mỗi release cần ghi SHA, migration đang có/còn thiếu, tương thích image
+trước/sau, lịch bảo trì nếu cần, nơi lưu backup, người phục hồi và kết quả restore thử.
 API Dockerfile không tự migrate/seed khi chạy.
 
 Dùng private connection của môi trường vận hành để `prisma migrate deploy`,

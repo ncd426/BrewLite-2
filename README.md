@@ -9,7 +9,6 @@ PostgreSQL. Prisma quản lý schema, migration và dữ liệu mẫu.
   PostgreSQL 16 nếu chạy trực tiếp. Hai ứng dụng cài dependency riêng bằng
   lockfile trong `apps/api` và `apps/web`; root không có script test/build.
 - CI dùng Node 24 cho API, Node 20 cho web; Dockerfile dùng Node 22 cho cả hai.
-  Phiên kiểm tra local ngày 14/11/2026 dùng Node 24.21.0, npm 11.19.0.
 - Dung lượng đĩa đủ cho image Docker và dữ liệu PostgreSQL.
 
 ## Chức năng
@@ -26,17 +25,17 @@ PostgreSQL. Prisma quản lý schema, migration và dữ liệu mẫu.
 
 ## Chạy bằng Docker Compose
 
-Tại thư mục gốc repository, tạo file cấu hình rồi khởi động:
+Tại thư mục gốc repository, tạo file cấu hình trong lần chạy đầu:
 
 ```powershell
-if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+Copy-Item .env.example .env
 ```
 
 Mở `.env`, đặt `SEED_DEMO_PASSWORD` dài ít nhất 12 ký tự và thay
 `JWT_SECRET` bằng giá trị riêng cho môi trường local. Sau đó chạy:
 
 ```powershell
-docker compose up --build
+docker compose up -d --build
 ```
 
 Compose mặc định khởi động ba service: PostgreSQL, backend và frontend
@@ -48,8 +47,8 @@ seed trước khi phục vụ API. Các địa chỉ mặc định:
 - API: <http://localhost:4000>
 - PostgreSQL: `localhost:5433`
 
-Với DB local **mới/disposable**, mở terminal thứ hai để khởi tạo số dư nguyên
-liệu, sau khi backend đã healthy:
+Với DB local **mới/disposable**, khởi tạo số dư nguyên liệu sau khi backend
+đã sẵn sàng:
 
 ```powershell
 docker compose exec -T backend npm run seed:inventory
@@ -57,9 +56,9 @@ docker compose exec -T backend npm run seed:inventory
 
 Seed khởi động không tự đặt lại số dư kho; nếu chưa khởi tạo, menu có thể
 hiển thị hết hàng. Không chạy bước này trên kho đang sử dụng vì có thay đổi
-số dư nguyên liệu. Kiểm tra `GET /products` và trang menu sau khi khởi tạo.
+số dư nguyên liệu.
 
-Dừng service bằng `Ctrl+C`, hoặc chạy `docker compose down`. Dữ liệu database
+Dừng service bằng `docker compose down`. Dữ liệu database
 được giữ trong volume; chỉ dùng `docker compose down --volumes` nếu chủ ý xóa
 dữ liệu local.
 
@@ -98,7 +97,7 @@ header `Authorization: Bearer <accessToken>`.
 
 | Method | Endpoint | Xác thực | Mô tả |
 | --- | --- | --- | --- |
-| `GET` | `/health` | Không | Liveness: JSON `status=ok`; không kiểm tra kết nối DB. |
+| `GET` | `/health` | Không | Readiness DB: chạy `SELECT 1` qua Prisma mỗi request; HTTP 200 khi query thành công, HTTP 503 khi DB/query lỗi. |
 | `GET` | `/products` | Không | Danh sách sản phẩm. |
 | `GET` | `/products/:id` | Không | Chi tiết sản phẩm. |
 | `POST` | `/auth/register` | Không | Đăng ký với `name`, `email`, `password`. |
@@ -111,6 +110,11 @@ header `Authorization: Bearer <accessToken>`.
 | `POST` | `/orders/:id/cancel` | Có | Hủy đơn còn được phép hủy, hoàn tồn kho theo trạng thái. |
 | `POST` | `/payments` | Có | Tạo phiên thanh toán VNPay Sandbox, trả `checkoutUrl` để khách mở cổng thanh toán. |
 | `GET` | `/payments/webhooks/vnpay` | Không dùng JWT; kiểm tra chữ ký IPN | Nhận và xác thực phản hồi VNPay trước khi cập nhật trạng thái thanh toán. |
+
+Health check trả `{"status":"ok","database":"up"}` khi kết nối/query DB
+thành công; khi lỗi trả HTTP 503 với `{"status":"error","database":"down"}`.
+Phản hồi lỗi không chứa connection URL hoặc chi tiết lỗi nội bộ. Query này
+kiểm tra DB phản hồi, chưa xác nhận schema/migration hay luồng nghiệp vụ.
 
 Thanh toán online yêu cầu header `Idempotency-Key` và body gồm `orderId`,
 `method: "VNPAY"`; có thể gửi `pointsToRedeem` (số điểm nguyên không âm).
@@ -166,39 +170,40 @@ hạn sử dụng và đơn tối thiểu trước khi demo mã giảm giá.
 
 ## Chạy trực tiếp: Backend, Frontend, Prisma Studio (Windows PowerShell)
 
-Trong **mỗi terminal**, mở PowerShell tại thư mục gốc repository. Tạo cấu hình
-nếu chưa có, rồi sửa `apps/api/.env` để `DATABASE_URL` trỏ tới cùng DB, user,
+Trong **mỗi terminal**, mở PowerShell tại thư mục gốc repository. Tạo các file
+cấu hình trong lần đầu; giữ file đang có ở những lần chạy sau. Sửa
+`apps/api/.env` để `DATABASE_URL` trỏ tới cùng DB, user,
 password và cổng trong `.env` root. API nạp `.env` tại `apps/api`, Compose nạp
 `.env` root. Giá trị mẫu password ở hai file **khác nhau**, cần đồng bộ trước
 khi kết nối. Khi API chạy trên host, dùng `localhost:5433`, hoặc cổng
 `POSTGRES_PORT` đã chọn; hostname `db` dành cho mạng Compose.
 
 ```powershell
-if (-not (Test-Path .env)) { Copy-Item .env.example .env }
-if (-not (Test-Path apps/api/.env)) { Copy-Item apps/api/.env.example apps/api/.env }
-if (-not (Test-Path apps/web/.env.local)) { Copy-Item apps/web/.env.example apps/web/.env.local }
+Copy-Item .env.example .env
+Copy-Item apps/api/.env.example apps/api/.env
+Copy-Item apps/web/.env.example apps/web/.env.local
 ```
 
 Đặt `JWT_SECRET`, `SEED_DEMO_PASSWORD` tối thiểu 12 ký tự và cấu hình VNPay nếu
-cần demo thanh toán. Khởi động DB; nếu đang chạy cả stack Compose, dừng hai
-service ứng dụng trước để tránh trùng cổng:
+cần demo thanh toán. Nếu đang chạy cả stack Compose, dùng
+`docker compose stop backend frontend` trước để tránh trùng cổng. Khởi động DB:
 
 ```powershell
-docker compose stop backend frontend
 docker compose up -d db
 ```
 
-**Terminal 1 — Backend:** Sau khi DB healthy và đã kiểm tra đúng DB đích:
+**Terminal 1 — Backend:**
 
 ```powershell
 cd apps/api
 npm ci
 npx prisma generate
 npx prisma migrate deploy
-# Chỉ khởi tạo dữ liệu demo trên DB local mới/disposable:
-npm run seed -- --initialize-inventory
 npm run start:dev
 ```
+
+Với DB local mới/disposable, chạy `npm run seed -- --initialize-inventory`
+sau migration và trước `npm run start:dev` để có dữ liệu demo và tồn kho.
 
 **Terminal 2 — Frontend:** Mở tại thư mục gốc BrewLite. `apps/web/.env.local` cần có
 `NEXT_PUBLIC_API_URL=http://localhost:4000` (đây là cấu hình local).
@@ -206,50 +211,37 @@ npm run start:dev
 ```powershell
 cd apps/web
 npm ci
-npm run dev -- -p 3000
+npm run dev
 ```
 
 **Terminal 3 — Prisma Studio:** Dùng cùng `apps/api/.env` với backend:
 
 ```powershell
 cd apps/api
-npx prisma studio --port 5555
+npx prisma studio
 ```
 
 Truy cập: [Frontend](http://localhost:3000),
 [Backend API](http://localhost:4000/products),
 [Prisma Studio](http://localhost:5555).
 
-Nếu báo `EADDRINUSE` ở 3000/4000, xem `docker compose ps` và dừng service
-`frontend`/`backend` hoặc các terminal Node cũ; **không dừng tiến trình Docker
-Desktop/WSL bằng `Stop-Process`**. Trước khi dùng database đang có dữ liệu, sao
-lưu và kiểm tra migration. Không dùng `migrate reset` hoặc tùy chọn `--volumes` của `docker compose down`
-nếu muốn giữ dữ liệu.
+Nếu cổng 3000/4000 đang được sử dụng, dừng service hoặc dev server cũ trước
+khi chạy. Với database đang có dữ liệu, xem [hướng dẫn migration](docs/database-migrations.md).
 
 ## Kiểm thử và build
 
-### Lint, unit/HTTP test và build không cần DB
+### Unit/HTTP test và build
 
 Sau `npm ci` của từng ứng dụng, chạy từ root:
 
 ```powershell
-npm --prefix apps/api run lint
 npm --prefix apps/api test -- --runInBand
 npm --prefix apps/api run build
-node --test apps/api/prisma/seed-data.test.mjs
-npm --prefix apps/web run lint
-Push-Location apps/web
-npx tsc --noEmit --incremental false
-Pop-Location
 npm --prefix apps/web run build
-python -m unittest discover -s scripts/cd -p test_render_release.py
 ```
 
-API cần Prisma Client đã generate (`cd apps/api; npx prisma generate`). Biến
-`DATABASE_URL` phải có trong môi trường hoặc `apps/api/.env` khi generate;
-generate chỉ tạo client. Jest mặc định bỏ qua 6 suite/18 test DB khi chưa đặt
-`RUN_DB_INTEGRATION=1`. CI hiện chạy lint/unit/build, không có PostgreSQL service
-và không chạy E2E. Python test CD dùng provider giả lập, không triển khai Render.
+API cần Prisma Client đã generate theo bước cài đặt ở trên. Test mặc định
+không chạy DB integration. Mỗi nhóm test bên dưới dùng một terminal riêng.
 
 ### E2E API với DB riêng
 
@@ -266,16 +258,14 @@ Từ root chạy:
 
 ```powershell
 docker compose --profile test up -d db-test
-docker compose --profile test ps db-test
 cd apps/api
 npm run test:db:setup
-npm run test:isolated
 npm run test:e2e
 ```
 
 `test:db:setup` **reset toàn bộ DB test** trước khi chạy 9 migration và seed
 inventory. Guard của script chỉ cho phép `localhost`/`127.0.0.1:5434/brewlite_test`.
-Không dùng cổng này cho DB cần giữ. E2E ở `apps/api/tests/e2e/` có 3 test với
+Không dùng cổng này cho DB cần giữ. E2E ở `tests/e2e/` có 3 test với
 NestJS + PostgreSQL thật: đăng ký/JWT → menu → tạo đơn → chi tiết/lịch sử. Các
 test dừng ở đơn `PENDING`; chưa tự động chạy trình duyệt hoặc VNPay tới `PAID`.
 
@@ -283,32 +273,32 @@ test dừng ở đơn `PENDING`; chưa tự động chạy trình duyệt hoặc
 
 Nhóm test này yêu cầu tên DB `brewlite_task10_*`. Dùng DB thứ hai trên service
 `db-test`; không bật `RUN_DB_INTEGRATION=1` qua `test:isolated` vì guard của hai
-nhóm yêu cầu tên DB khác nhau. Mở terminal mới ở root:
+nhóm yêu cầu tên DB khác nhau. Tạo DB test một lần từ root:
 
 ```powershell
-$testDbName = "brewlite_task10_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
-docker compose --profile test exec -T db-test createdb -U postgres $testDbName
-$env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5434/$testDbName"
-$env:JWT_SECRET = 'isolated-integration-test-secret'
-cd apps/api
-npx prisma migrate deploy
-npx prisma generate
-$env:RUN_DB_INTEGRATION = '1'
-try { npm test -- --runInBand } finally {
-  Remove-Item Env:\RUN_DB_INTEGRATION -ErrorAction SilentlyContinue
-  Remove-Item Env:\DATABASE_URL -ErrorAction SilentlyContinue
-  Remove-Item Env:\JWT_SECRET -ErrorAction SilentlyContinue
-}
+docker compose --profile test exec -T db-test createdb -U postgres brewlite_task10_local
 ```
 
-Kết quả kiểm tra ngày **14/11/2026**, giới hạn bao phủ và lỗi còn mở được ghi
+Trong terminal riêng, chạy:
+
+```powershell
+cd apps/api
+$env:DATABASE_URL = 'postgresql://postgres:postgres@localhost:5434/brewlite_task10_local'
+$env:JWT_SECRET = 'isolated-integration-test-secret'
+$env:RUN_DB_INTEGRATION = '1'
+npx prisma migrate deploy
+npm test -- --runInBand
+```
+
+Đóng terminal này khi kết thúc để các biến môi trường test không ảnh hưởng
+đến lần chạy khác. Kết quả kiểm thử, giới hạn bao phủ và lỗi còn mở được ghi
 trong [biên bản kiểm tra hệ thống](docs/evidence/sprint-2/system-verification-2026-11-14.md).
 Khi Windows/OneDrive báo `EINVAL readlink` ở `.next`, dừng dev server, chuyển
 cache build cũ sang thư mục tạm rồi build lại; giữ source và file `.env`.
 
 ## Deploy và rollback trên Render
 
-Hai URL được ghi nhận trong [minh chứng CI/CD ngày 14/11](docs/evidence/sprint-2/a2-25-ci-cd-production.md):
+Hai URL được ghi nhận trong [minh chứng CI/CD](docs/evidence/sprint-2/a2-25-ci-cd-production.md):
 
 - Web: <https://brewlite-2-web.onrender.com>
 - API: <https://brewlite-api-49rx.onrender.com> (`/health`, `/products`).
@@ -318,14 +308,13 @@ lint/test/build → GHCR image tag `sha-<12 ký tự SHA>` → deploy Render b�
 → đợi deploy ID `live` → smoke API/Web. Pull request chỉ kiểm tra và build image,
 không publish/deploy. Image web nhúng `PROD_API_PUBLIC_URL` lúc build.
 
-Trước mỗi release, Khoa đối chiếu migration/backup và xác nhận **đúng full SHA**
+Trước mỗi release, người phụ trách DB đối chiếu migration/backup và xác nhận **đúng full SHA**
 trong `A2_27_MIGRATION_APPROVED_SHA`; người vận hành kiểm tra Render service IDs,
 public URLs, secret `RENDER_API_KEY` và môi trường `production`. Sau khi được
 nhóm chấp thuận release, bật `RENDER_DEPLOY_ENABLED=true` rồi dispatch:
 
 ```powershell
 gh workflow run cd.yml -R ncd426/BrewLite-2 --ref main
-gh run list -R ncd426/BrewLite-2 --workflow cd.yml --limit 3
 ```
 
 Chỉ kết luận deploy thành công khi job `Render deploy by digest + smoke` đạt và
@@ -337,14 +326,11 @@ hoặc seed; cấu hình `NODE_ENV=production`, API `PORT=4000`, web `PORT=3000`
 **Rollback ứng dụng:** giữ digest API/Web của release thành công trước đó trong
 GHCR. Khi release lỗi, dừng phát hành tiếp, chọn Render service → Deploys →
 deployment thành công trước → Rollback cho service bị ảnh hưởng. Chờ deployment
-mới `Live`, chạy smoke và ghi SHA/digest, deploy ID, thời gian và kết quả:
-
-```powershell
-.\scripts\cd\Smoke-A2-25-Production.ps1 -WebUrl 'https://brewlite-2-web.onrender.com' -ApiUrl 'https://brewlite-api-49rx.onrender.com'
-```
+mới `Live`, thực hiện smoke theo [runbook triển khai](docs/deployment.md),
+ghi SHA/digest, deploy ID và kết quả.
 
 Rollback image không đảo migration hoặc dữ liệu. Nếu schema mới không tương
-thích image cũ, Khoa xử lý theo backup/forward fix trước khi phục hồi ứng dụng.
+thích image cũ, người phụ trách DB xử lý theo backup/forward fix trước khi phục hồi ứng dụng.
 Adapter hiện dừng khi lỗi, rollback được thực hiện thủ công. Chi tiết release,
 backup/restore và xác nhận sau rollback: [runbook triển khai](docs/deployment.md)
 và [migration](docs/database-migrations.md).
@@ -358,7 +344,7 @@ và [migration](docs/database-migrations.md).
 - [Ma trận truy vết](docs/traceability-matrix.md)
 - [SRS FR/NFR và acceptance criteria](docs/requirements/srs.md)
 - [Sprint Review & Retrospective; đóng góp 3 thành viên](docs/team/sprint-review-retrospective.md)
-- [Kiểm tra hệ thống ngày 14/11/2026](docs/evidence/sprint-2/system-verification-2026-11-14.md)
+- [Kiểm tra hệ thống](docs/evidence/sprint-2/system-verification-2026-11-14.md)
 - [Nội dung PR A2-29](docs/pr-a2-29.md)
 
 

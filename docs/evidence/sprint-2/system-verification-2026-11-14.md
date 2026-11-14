@@ -1,8 +1,8 @@
-# A2-29 — Kiểm tra hệ thống BrewLite ngày 14/11/2026
+# A2-29 — Kiểm tra hệ thống BrewLite
 
 **Baseline:** `506eaeba414f5c9d1f70b45dd933b1781430c786`, branch khi bắt đầu
-`main`. Kết quả chạy trên code baseline; A2-29 chỉ sửa tài liệu. Ngày theo
-Asia/Saigon. Không sửa source để làm test xanh.
+`main`. **Lượt kiểm tra:** 14/11/2026 (Asia/Saigon). Kết quả chạy trên code
+baseline; A2-29 chỉ sửa tài liệu. Không sửa source để làm test xanh.
 
 **Kết luận:** lint/build, E2E API và stack Compose đạt; full DB suite còn
 **10 test FAIL**. Chưa đủ điều kiện kết luận toàn hệ thống/Gate Task 5 đạt.
@@ -72,7 +72,7 @@ Fixture `createTestingModule` chỉ khai báo `PaymentsController`, thiếu
 `PaymentsWebhookController`. [PaymentsModule runtime](../../../apps/api/src/payments/payments.module.ts)
 đã đăng ký cả hai controller; kết quả xác định lỗi fixture, chưa chứng minh
 endpoint production bị mất. AC idempotency/loyalty/payment DB vẫn chưa được
-xác nhận bởi lượt chạy này. Đề xuất Bảo sửa fixture trong PR test riêng, chạy
+xác nhận bởi lượt chạy này. Nhóm kiểm thử cần sửa fixture trong PR test riêng, chạy
 lại cả bốn suite và full DB; reviewer đối chiếu FR-06/09/10 trong ma trận.
 
 ### DB-02 — transaction không bắt đầu kịp khi 10 người mua tranh tồn
@@ -85,7 +85,7 @@ thúc vẫn tái hiện; không thể chỉ quy cho E2E chạy song song. Cần 
 transaction/pool/maxWait tại [OrdersService.create](../../../apps/api/src/orders/orders.service.ts).
 
 Đây là lỗi kiểm chứng FR-05/US-16; chưa kết luận có oversell hoặc chọn bản sửa
-timeout khi chưa điều tra. Đề xuất Danh/Bảo xử lý nguyên nhân và hợp đồng lỗi,
+timeout khi chưa điều tra. Nhóm phát triển/kiểm thử cần xử lý nguyên nhân và hợp đồng lỗi,
 chạy lại PostgreSQL concurrency với thông số tài nguyên rõ.
 
 ```text
@@ -105,7 +105,7 @@ Env này sinh riêng để kiểm tra, không phải file cần commit. Sau
 `seed:inventory` trên DB disposable: menu có **8 sản phẩm/8 có hàng**, đọc
 được detail; register → tạo đơn `PENDING` → đọc chi tiết → cancel `CANCELLED`
 → history đều thành công. Web `/` HTTP 200 `text/html`; API `/health` trả
-`status=ok`. Local smoke lúc **13:48:50 ngày 14/11/2026, Asia/Saigon**.
+`status=ok`.
 
 Đã restart DB rồi backend/frontend trên project riêng, đợi API trở lại và
 so sánh số bản ghi trước/sau: **8 products, 4 users, 8 orders, 2 CANCELLED**;
@@ -118,7 +118,7 @@ sử dụng; Docker Desktop vẫn chạy. Kết quả cleanup phải được đ
 
 ## HTTPS công khai — chỉ GET
 
-Lượt GET mới ngày 14/11 qua HTTP client; không gửi login/order/payment lên production:
+Lượt GET qua HTTP client; không gửi login/order/payment lên production:
 
 | URL | Kết quả |
 | --- | --- |
