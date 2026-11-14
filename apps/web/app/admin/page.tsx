@@ -67,7 +67,7 @@ function AdminContent() {
                 ['Tổng đơn', overview.orders.toLocaleString('vi-VN')],
                 ['Đơn hoàn tất', overview.completedOrders.toLocaleString('vi-VN')],
                 ['Nguyên liệu cần nhập', overview.lowStock.toLocaleString('vi-VN')],
-                ['Doanh thu mô phỏng', `${overview.simulatedRevenue.toLocaleString('vi-VN')}đ`],
+                ['Giá trị đơn đã ghi nhận', `${overview.simulatedRevenue.toLocaleString('vi-VN')}đ`],
               ].map(([title, value]) => (
                 <div key={title} className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
                   <p className="text-sm text-slate-500">{title}</p>
@@ -75,7 +75,6 @@ function AdminContent() {
                 </div>
               ))}
             </div>
-            <p className="mt-5 text-xs text-slate-500">Số tiền chỉ là giao dịch thanh toán mô phỏng, không phải doanh thu nhận qua ngân hàng.</p>
           </>}
         </section>
       )}

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { fetchProduct, type Product } from '@/lib/api';
 import { useCartStore } from '@/lib/useCartStore';
-import { MOCK_PRODUCTS } from '@/lib/mock-data';
 
 const SIZE_OPTIONS = [
   { id: 'S', name: 'Size S', surcharge: 0 },
@@ -21,6 +20,7 @@ const TOPPING_OPTIONS = [
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string>('S');
   const [selectedToppings, setSelectedToppings] = useState<string[]>([]);
 
@@ -38,8 +38,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     fetchProduct(productId)
       .then(setProduct)
       .catch(() => {
-        const fallback = MOCK_PRODUCTS.find((p) => p.id === productId) || null;
-        setProduct(fallback);
+        setLoadError(true);
+        setProduct(null);
       })
       .finally(() => setLoading(false));
   }, [params.id]);
@@ -61,7 +61,8 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   if (!product) {
     return (
       <main className="mx-auto max-w-2xl p-8">
-        <h1 className="mb-4 text-3xl font-bold">Không tìm thấy sản phẩm</h1>
+        <h1 className="mb-4 text-3xl font-bold">{loadError ? 'Không thể tải sản phẩm' : 'Không tìm thấy sản phẩm'}</h1>
+        {loadError && <p className="mb-5 text-gray-600">Vui lòng thử lại sau ít phút.</p>}
         <Link href="/" className="rounded-xl bg-amber-700 px-4 py-2 text-white">Quay lại menu</Link>
       </main>
     );

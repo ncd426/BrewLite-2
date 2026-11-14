@@ -25,6 +25,17 @@ function parsePoints(raw: string | null): number | null {
   return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
+const ORDER_STATUS_NAMES: Record<string, string> = {
+  PENDING: 'Chờ thanh toán',
+  PAID: 'Đã thanh toán',
+  PAYMENT_FAILED: 'Thanh toán thất bại',
+  PREPARING: 'Đang pha chế',
+  READY: 'Sẵn sàng giao',
+  COMPLETED: 'Đã hoàn tất',
+  CANCELLED: 'Đã hủy',
+};
+const formatOrderStatus = (status: string) => ORDER_STATUS_NAMES[status] ?? status;
+
 function ConfirmContent() {
   const query = useSearchParams();
   const router = useRouter();
@@ -125,13 +136,13 @@ function ConfirmContent() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <div className="rounded-2xl border border-amber-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">BrewLite • Chế độ thử nghiệm</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-amber-700">BrewLite • Thanh toán đơn hàng</p>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">Xác nhận thanh toán</h1>
         <p className="mt-2 text-sm text-gray-500">
-          VNPay Sandbox
+          Thanh toán trực tuyến qua VNPay
         </p>
         <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-          Trạng thái đơn chỉ được cập nhật sau callback đã xác thực từ nhà cung cấp thanh toán.
+          Trạng thái đơn hàng sẽ được cập nhật sau khi cổng thanh toán xác nhận giao dịch.
           Không nhập thông tin thẻ trên BrewLite.
         </div>
 
@@ -153,7 +164,7 @@ function ConfirmContent() {
           <section className="mt-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
               <span className="font-semibold text-amber-950">Đơn hàng #{order.id}</span>
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">{order.status}</span>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">{formatOrderStatus(order.status)}</span>
             </div>
             <h2 className="font-semibold text-gray-900">Sản phẩm</h2>
             <div className="divide-y divide-gray-100">
@@ -198,9 +209,6 @@ function ConfirmContent() {
           </section>
         )}
       </div>
-      <p className="mt-4 text-center text-xs text-gray-500">
-        &apos;Chỉ phản hồi IPN có chữ ký hợp lệ mới xác nhận thanh toán; chuyển hướng trình duyệt không đủ.&apos;
-      </p>
     </main>
   );
 }

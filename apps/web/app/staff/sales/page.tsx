@@ -49,7 +49,7 @@ function SalesContent() {
     void fetchProducts().then((result) => {
       if (active) setProducts(result);
     }).catch((e) => {
-      if (active) setMenuError(e instanceof Error ? e.message : 'Cannot load products');
+      if (active) setMenuError(e instanceof Error ? e.message : 'Không thể tải thực đơn. Vui lòng thử lại.');
     }).finally(() => { if (active) setMenuLoading(false); });
     return () => { active = false; };
   }, []);
@@ -98,7 +98,7 @@ function SalesContent() {
       setCart([]);
       // Do not clear key until a new sale actually begins; a duplicate click is safe.
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Cannot create counter sale. Check the order queue before retrying.');
+      setError(e instanceof Error ? e.message : 'Không thể tạo đơn tại quầy. Hãy kiểm tra danh sách đơn hàng trước khi thử lại.');
     } finally {
       submitting.current = false;
       setSelling(false);
@@ -128,9 +128,8 @@ function SalesContent() {
       {receipt ? (
         <section className="mt-7 rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-emerald-800">Đã tạo đơn tại quầy #{receipt.orderId}</h2>
-          <p className="mt-3 text-sm text-slate-700">Trạng thái: PAID · Phương thức mô phỏng: {receipt.method === 'CARD' ? 'Thẻ' : receipt.method}</p>
+          <p className="mt-3 text-sm text-slate-700">Trạng thái: Đã ghi nhận · Hình thức: {receipt.method === 'CARD' ? 'Thẻ tại quầy' : receipt.method}</p>
           <p className="mt-2 text-2xl font-bold text-amber-950">{money(receipt.total)}</p>
-          <p className="mt-3 text-sm text-slate-600">Bản demo chỉ ghi nhận thanh toán mô phỏng, không thu tiền thật.</p>
           <div className="mt-5 flex flex-wrap gap-3">
             <button type="button" onClick={startNextSale} className="rounded-xl bg-amber-800 px-4 py-3 font-semibold text-white">Tạo đơn mới</button>
             <Link href="/staff" className="rounded-xl border border-amber-300 px-4 py-3 font-semibold text-amber-900">Xem hàng chờ pha chế</Link>
@@ -193,15 +192,15 @@ function SalesContent() {
             </div>
             <div className="mt-5 border-t pt-4">
               <p className="flex justify-between font-bold"><span>Tạm tính:</span><span>{money(estimatedTotal)}</span></p>
-              <p className="mt-2 text-xs text-slate-500">Tổng tiền chính xác được Backend tính theo bảng giá.</p>
+              <p className="mt-2 text-xs text-slate-500">Giá trị cuối cùng được xác nhận khi tạo đơn.</p>
             </div>
-            <p className="mt-5 text-sm text-slate-700">Thanh toán bằng thẻ (mô phỏng), không thu tiền thật.</p>
+            <p className="mt-5 text-sm text-slate-700">Hình thức ghi nhận thanh toán tại quầy: Thẻ</p>
             {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
             <button type="button" disabled={!cart.length || selling} onClick={() => void finishSale()}
               className="mt-6 w-full rounded-xl bg-amber-800 px-4 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
               {selling ? 'Đang tạo đơn...' : 'Xác nhận bán và tạo đơn'}
             </button>
-            <p className="mt-3 text-xs text-slate-500">Không trừ điểm thưởng, không tạo đơn mua cá nhân. Chỉ dùng trong demo.</p>
+            <p className="mt-3 text-xs text-slate-500">Đơn bán tại quầy không áp dụng điểm thưởng của khách hàng.</p>
           </section>
         </div>
       )}
