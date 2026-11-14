@@ -8,9 +8,7 @@
 | Web | https://brewlite-2-web.onrender.com |
 | API/health | https://brewlite-api-49rx.onrender.com/health |
 | CD deploy và smoke | https://github.com/ncd426/BrewLite-2/actions/runs/43625066012 (`success` theo log PowerShell do thành viên nhóm cung cấp) |
-| Demo thủ công | Người thực hiện đã báo **test/demo thành công trên Render** ngày 15/11/2026; chưa có log chi tiết từng bước đính kèm repo |
-| Video demo công khai cho giảng viên | `PENDING_VIDEO_URL` — tải MP4 lên Drive và thêm link chỉ xem; không commit MP4 vào Git |
-| Ảnh desktop/mobile | `PENDING_SCREENSHOT_EVIDENCE` — đường dẫn ảnh đã ẩn thông tin nhạy cảm hoặc link Drive |
+| Demo | https://drive.google.com/drive/folders/1LYnzuF58uFC6ikL7jz4c8rYVX-k1RtJm?usp=sharing|
 
 ## Checklist xác nhận thủ công — đánh dấu khi có bằng chứng
 
