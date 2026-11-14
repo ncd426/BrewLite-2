@@ -30,7 +30,11 @@ assertIsolatedDatabase(testEnv.DATABASE_URL);
 const mode = process.argv[2];
 const jestArgs =
   mode === 'e2e'
-    ? ['--config', process.argv[3] ?? 'tests/e2e/jest-e2e.json', '--runInBand']
+    ? [
+        '--config',
+        resolve(apiRoot, process.argv[3] ?? '../../tests/e2e/jest-e2e.json'),
+        '--runInBand',
+      ]
     : mode === 'unit'
       ? ['--runInBand']
       : null;
