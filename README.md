@@ -84,7 +84,7 @@ dữ liệu local.
 | `API_PORT` | `4000` | Cổng API trên máy host. |
 | `WEB_PORT` | `3000` | Cổng web trên máy host. |
 | `PAYMENT_TTL_MINUTES` | `15` | Thời hạn phiên thanh toán (phút). |
-| `PAYMENT_API_PUBLIC_URL` | URL mẫu | URL API công khai để VNPay truy cập callback; cần HTTPS khi dùng sandbox. |
+| `PAYMENT_API_PUBLIC_URL` | URL mẫu | URL API công khai để cấu hình IPN tại VNPay; cần HTTPS. Khai báo biến này không tự đăng ký callback. |
 | `PAYMENT_WEB_PUBLIC_URL` | `http://localhost:3000` | URL web dùng để quay lại sau thanh toán. |
 | `VNPAY_TMN_CODE` | Để trống | Mã merchant VNPay Sandbox, cấu hình riêng ở `.env`. |
 | `VNPAY_HASH_SECRET` | Để trống | Khóa ký VNPay Sandbox, không commit lên Git. |
@@ -149,6 +149,135 @@ có chủ đích**, không phải chênh lệch sai.
   chưa cấu hình tunnel/callback thích hợp.
 - VNPay Sandbox chỉ dùng để thử nghiệm, không chuyển tiền thật. Bán tại quầy
   có luồng xác nhận CASH/CARD mô phỏng riêng, không gọi VNPay.
+
+## Thanh toán VNPay Sandbox tại local qua ngrok hoặc Cloudflare Tunnel
+
+Chạy database, API tại `http://localhost:4000` và web tại `http://localhost:3000`
+theo mục **Chạy bằng Docker Compose** hoặc **Chạy trực tiếp** trong README.
+Chuẩn bị `VNPAY_TMN_CODE` và `VNPAY_HASH_SECRET` của merchant sandbox; nếu chưa có,
+[đăng ký thông tin kết nối VNPay Sandbox](https://sandbox.vnpayment.vn/devreg/).
+Chỉ cần tunnel **API cổng 4000** để VNPay gửi IPN. Khi thao tác trên cùng máy,
+web và `NEXT_PUBLIC_API_URL=http://localhost:4000` vẫn có thể dùng localhost.
+
+### 1. Mở tunnel tới API (chọn một cách)
+
+**Cách A — ngrok:** Cài ngrok CLI và lấy authtoken theo
+[hướng dẫn chính thức](https://ngrok.com/docs/start), rồi mở terminal riêng:
+
+```powershell
+ngrok config add-authtoken "YOUR_NGROK_AUTHTOKEN"
+ngrok http 4000
+```
+
+Sao chép URL **HTTPS** ở dòng `Forwarding` trỏ tới `http://localhost:4000`.
+Lệnh cấu hình authtoken chỉ cần thực hiện lần đầu hoặc khi đổi token.
+
+**Cách B — Cloudflare Quick Tunnel:** Cài `cloudflared` theo
+[hướng dẫn tải chính thức](https://developers.cloudflare.com/tunnel/downloads/),
+đảm bảo gọi được lệnh trong PowerShell, rồi mở terminal riêng:
+
+```powershell
+cloudflared tunnel --url http://localhost:4000
+```
+
+Sao chép URL `https://...trycloudflare.com` được in trong terminal.
+[Quick Tunnel](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)
+không cần tài khoản Cloudflare hoặc tên miền riêng; địa chỉ thay đổi mỗi lần tạo
+tunnel mới. Giữ terminal ngrok hoặc `cloudflared` chạy suốt quá trình thanh toán
+và chờ IPN; dừng tiến trình sẽ ngắt kết nối tới API.
+
+### 2. Cấu hình biến môi trường và khởi động lại backend
+
+Sửa `.env` tại root nếu chạy Compose, hoặc `apps/api/.env` nếu chạy API trực tiếp.
+Ví dụ dưới đây dùng Cloudflare; nếu dùng ngrok, thay bằng URL HTTPS ngrok vừa cấp:
+
+```dotenv
+PAYMENT_API_PUBLIC_URL=https://your-api.trycloudflare.com
+PAYMENT_WEB_PUBLIC_URL=http://localhost:3000
+VNPAY_TMN_CODE=YOUR_SANDBOX_TMN_CODE
+VNPAY_HASH_SECRET=YOUR_SANDBOX_HASH_SECRET
+VNPAY_PAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+```
+
+Thay các giá trị mẫu bằng thông tin thật của **môi trường sandbox**, giữ secret
+trong `.env` và không commit lên Git. Hai biến URL chỉ chứa địa chỉ gốc, không
+thêm đường dẫn callback hoặc dấu `/` cuối. `PAYMENT_API_PUBLIC_URL` ghi lại URL
+API công khai; backend hiện không dùng biến này để tự đăng ký IPN với VNPay.
+
+Với Compose, chạy từ root để container nhận biến môi trường mới:
+
+```powershell
+docker compose up -d --force-recreate backend
+```
+
+Nếu chạy trực tiếp, dừng API bằng `Ctrl+C`, rồi chạy lại `npm run start:dev`
+trong `apps/api`. Tạo phiên thanh toán mới sau khi đổi cấu hình để link thanh
+toán chứa return URL mới.
+
+### 3. Đăng ký IPN URL với VNPay và kiểm tra tunnel
+
+Cấu hình IPN URL cho đúng merchant sandbox trong trang quản trị merchant nếu
+được cấp quyền, hoặc gửi URL cho đầu mối hỗ trợ tích hợp VNPay thiết lập, theo
+[tài liệu kết nối VNPay](https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html).
+Với URL ví dụ ở trên:
+
+| Loại URL | Địa chỉ | Cách sử dụng |
+| --- | --- | --- |
+| IPN (server VNPay gọi API, phương thức `GET`) | `https://your-api.trycloudflare.com/payments/webhooks/vnpay` | Đăng ký với VNPay; bắt buộc truy cập được từ Internet qua HTTPS. |
+| Return URL (trình duyệt quay về web) | `http://localhost:3000/checkout/qr` | Backend tự tạo từ `PAYMENT_WEB_PUBLIC_URL`, kèm `orderId`, `method` và `points`. |
+
+Kiểm tra API local và URL công khai trong PowerShell; thay domain bằng tunnel
+thực tế. Cả hai cần trả `status: ok`, `database: up`:
+
+```powershell
+Invoke-RestMethod http://localhost:4000/health
+Invoke-RestMethod https://your-api.trycloudflare.com/health
+```
+
+Endpoint IPN phải nhận được request trực tiếp từ server VNPay, không bị chặn
+bởi trang đăng nhập hoặc xác thực tương tác của dịch vụ tunnel. Khi domain
+tunnel thay đổi, cập nhật cả `PAYMENT_API_PUBLIC_URL` và IPN đã đăng ký tại VNPay.
+Return URL localhost chỉ dùng được khi mở thanh toán trên chính máy đang chạy
+web; nếu thử trên điện thoại hoặc máy khác, cần công khai cả web và cấu hình lại
+`PAYMENT_WEB_PUBLIC_URL`, `NEXT_PUBLIC_API_URL` tương ứng.
+
+### 4. Thực hiện thanh toán thử
+
+1. Mở `http://localhost:3000`, đăng nhập, thêm sản phẩm vào giỏ và checkout qua VNPay.
+2. Tại trang `/checkout/qr`, mở link thanh toán VNPay Sandbox; chọn thanh toán bằng
+   **thẻ nội địa/tài khoản ngân hàng**, ngân hàng **NCB** để dùng thẻ test bên dưới.
+3. Nhập thông tin thẻ và OTP, hoàn tất giao dịch rồi quay lại BrewLite.
+4. Chờ API nhận IPN hợp lệ và kiểm tra đơn chuyển sang `PAID`. Trang checkout
+   tự kiểm tra trạng thái đơn; việc quay về Return URL chưa đủ để xác nhận đã trả tiền.
+
+Nếu sandbox báo thành công nhưng đơn vẫn chờ thanh toán, kiểm tra tunnel còn
+chạy, IPN đã đăng ký đúng domain/đường dẫn, thông tin merchant và log backend
+(`docker compose logs --tail 100 backend` nếu chạy Compose). Mở URL webhook
+không kèm dữ liệu có chữ ký sẽ trả `RspCode: "97"` (`Invalid signature`), không
+phải kết quả của một giao dịch thử.
+
+### Thông tin thẻ test VNPay Sandbox (NCB)
+
+Đây là thẻ test nội địa dùng trên sandbox, không phát sinh thanh toán tiền thật.
+Thông tin giao dịch thành công theo
+[tài liệu thẻ test VNPay](https://sandbox.vnpayment.vn/apis/docs/gioi-thieu/):
+
+| Thông tin | Giá trị |
+| --- | --- |
+| Ngân hàng | `NCB` |
+| Số thẻ | `9704198526191432198` |
+| Tên chủ thẻ | `NGUYEN VAN A` |
+| Ngày phát hành | `07/15` |
+| OTP | `123456` |
+
+**Số thẻ dùng để test các trường hợp đặc biệt:**
+
+| Số thẻ | Trường hợp |
+| --- | --- |
+| `9704195798459170488` | Không đủ số dư |
+| `9704192181368742` | Chưa kích hoạt |
+| `9704193370791314` | Thẻ bị khóa |
+| `9704194841945513` | Thẻ hết hạn |
 
 
 ## Tài khoản demo
