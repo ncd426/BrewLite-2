@@ -1,106 +1,129 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="2150" height="1550" viewBox="0 0 2150 1550" role="img" aria-labelledby="title desc">
-<title id="title">BrewLite - Use Case checkout VNPay Sandbox</title>
-<desc id="desc">Customer creates pending order, starts VNPay payment session, VNPay sends signed IPN that alone can settle payment; retry/cancel and order history.</desc>
-<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#52685d"/></marker>
-<style>
-text{font-family:Arial,'DejaVu Sans',sans-serif;fill:#23352d}.title{font-size:31px;font-weight:700}.caption{font-size:17px;font-weight:700}.uc{fill:#f4f7f5;stroke:#315b4a;stroke-width:2}.ok{fill:#ecf7ef;stroke:#42835c;stroke-width:2}.bad{fill:#fff0ed;stroke:#b34e4a;stroke-width:2}.lbl{font-size:16px;text-anchor:middle}.actor{fill:none;stroke:#24372e;stroke-width:3;stroke-linecap:round}.assoc{fill:none;stroke:#52685d;stroke-width:2}.inc{fill:none;stroke:#52685d;stroke-width:1.8;stroke-dasharray:7 6;marker-end:url(#arr)}.notebox{fill:#fff9e7;stroke:#c89d48;stroke-width:1.5}.notetext{font-size:15px}.rel{font-size:14px;fill:#506258;paint-order:stroke;stroke:white;stroke-width:5px;stroke-linejoin:round}
-</style></defs>
-<rect width="2150" height="1550" fill="#fff"/>
-<text class="title" x="1075" y="57" text-anchor="middle">BrewLite - Use Case: Đặt hàng và thanh toán VNPay Sandbox</text>
-<rect x="252" y="90" width="1660" height="1400" rx="11" fill="#fbfcfb" stroke="#315b4a" stroke-width="2.4"/>
-<text class="caption" x="1082" y="128" text-anchor="middle">BrewLite Web + API</text>
-<path class="assoc" d="M183 680 L390 250"/>
-<path class="assoc" d="M183 705 L365 800"/>
-<path class="assoc" d="M183 732 L390 986"/>
-<path class="assoc" d="M183 750 L1310 1200"/>
-<path class="assoc" d="M2037 790 L1790 790"/>
-<path class="inc" d="M733 250L835 188"/>
-<path class="inc" d="M733 250L835 295"/>
-<path class="inc" d="M733 250L835 400"/>
-<path class="inc" d="M733 250L835 505"/>
-<path class="inc" d="M733 250L835 609"/>
-<path class="inc" d="M752 803L837 745"/>
-<path class="inc" d="M1344 795L1350 907"/>
-<path class="inc" d="M1342 815L1116 906"/>
-<path class="inc" d="M560 355 L560 301"/>
-<path class="inc" d="M560 936L560 851"/>
-<path class="inc" d="M740 1116L959 951"/>
-<path class="inc" d="M1120 1107L1089 951"/>
-<text class="rel" x="748" y="205">«include»</text>
-<text class="rel" x="750" y="287">«include»</text>
-<text class="rel" x="762" y="372">«include»</text>
-<text class="rel" x="762" y="470">«include»</text>
-<text class="rel" x="766" y="565">«include»</text>
-<text class="rel" x="752" y="765">«include»</text>
-<text class="rel" x="1348" y="865">«include»</text>
-<text class="rel" x="1165" y="853">«include»</text>
-<text class="rel" x="566" y="342">«extend»</text>
-<text class="rel" x="570" y="901">«extend»</text>
-<text class="rel" x="825" y="1024">«extend»</text>
-<text class="rel" x="1125" y="1030">«extend»</text>
-<ellipse class="uc" cx="560" cy="250" rx="176" ry="52"/>
-<text class="lbl" x="560" y="239" style="font-size:16px">Đặt hàng từ giỏ</text>
-<text class="lbl" x="560" y="262" style="font-size:16px">POST /orders</text>
-<ellipse class="uc" cx="1050" cy="188" rx="213" ry="42"/>
-<text class="lbl" x="1050" y="177" style="font-size:16px">Xác thực JWT, hồ sơ</text>
-<text class="lbl" x="1050" y="200" style="font-size:16px">và số dư điểm</text>
-<ellipse class="uc" cx="1050" cy="295" rx="213" ry="42"/>
-<text class="lbl" x="1050" y="284" style="font-size:16px">Kiểm tra giỏ, sản phẩm,</text>
-<text class="lbl" x="1050" y="307" style="font-size:16px">size và topping</text>
-<ellipse class="uc" cx="1050" cy="400" rx="213" ry="42"/>
-<text class="lbl" x="1050" y="389" style="font-size:16px">Tính giá, xác nhận</text>
-<text class="lbl" x="1050" y="412" style="font-size:16px">khuyến mãi phía server</text>
-<ellipse class="uc" cx="1050" cy="505" rx="213" ry="42"/>
-<text class="lbl" x="1050" y="494" style="font-size:16px">Kiểm tra và trừ tồn</text>
-<text class="lbl" x="1050" y="517" style="font-size:16px">trong transaction</text>
-<ellipse class="uc" cx="1050" cy="609" rx="213" ry="42"/>
-<text class="lbl" x="1050" y="598" style="font-size:16px">Tạo Order / OrderItem</text>
-<text class="lbl" x="1050" y="621" style="font-size:16px">PENDING</text>
-<ellipse class="uc" cx="560" cy="404" rx="190" ry="44"/>
-<text class="lbl" x="560" y="404" style="font-size:16px">Xem trước mã khuyến mãi</text>
-<ellipse class="uc" cx="560" cy="803" rx="195" ry="53"/>
-<text class="lbl" x="560" y="792" style="font-size:16px">Tạo phiên VNPay Sandbox</text>
-<text class="lbl" x="560" y="815" style="font-size:16px">POST /payments: PENDING</text>
-<ellipse class="uc" cx="1050" cy="745" rx="213" ry="48"/>
-<text class="lbl" x="1050" y="734" style="font-size:16px">Kiểm tra sở hữu, số tiền,</text>
-<text class="lbl" x="1050" y="757" style="font-size:16px">điểm và Idempotency-Key</text>
-<ellipse class="uc" cx="1570" cy="790" rx="217" ry="54"/>
-<text class="lbl" x="1570" y="779" style="font-size:16px">Nhận signed VNPay IPN</text>
-<text class="lbl" x="1570" y="802" style="font-size:16px">GET /payments/webhooks/vnpay</text>
-<ellipse class="uc" cx="1570" cy="932" rx="217" ry="48"/>
-<text class="lbl" x="1570" y="921" style="font-size:16px">Xác minh chữ ký, merchant,</text>
-<text class="lbl" x="1570" y="944" style="font-size:16px">mã giao dịch và số tiền</text>
-<ellipse class="uc" cx="1080" cy="932" rx="232" ry="47"/>
-<text class="lbl" x="1080" y="921" style="font-size:16px">Chốt Payment và cập nhật</text>
-<text class="lbl" x="1080" y="944" style="font-size:16px">trạng thái đơn hàng</text>
-<ellipse class="uc" cx="560" cy="986" rx="190" ry="50"/>
-<text class="lbl" x="560" y="975" style="font-size:16px">Thử lại PAYMENT_FAILED</text>
-<text class="lbl" x="560" y="998" style="font-size:16px">Idempotency-Key mới</text>
-<ellipse class="ok" cx="570" cy="1145" rx="236" ry="68"/>
-<text class="lbl" x="570" y="1123" style="font-size:15px">SUCCESS → PAID</text>
-<text class="lbl" x="570" y="1146" style="font-size:15px">Điểm được xử lý một lần;</text>
-<text class="lbl" x="570" y="1169" style="font-size:15px">xóa đúng dòng giỏ đã mua</text>
-<ellipse class="bad" cx="1100" cy="1145" rx="230" ry="68"/>
-<text class="lbl" x="1100" y="1134" style="font-size:15px">FAILED → PAYMENT_FAILED</text>
-<text class="lbl" x="1100" y="1157" style="font-size:15px">Giữ giỏ, cho phép thử lại</text>
-<ellipse class="uc" cx="1570" cy="1115" rx="210" ry="48"/>
-<text class="lbl" x="1570" y="1104" style="font-size:16px">Xem trạng thái / lịch sử</text>
-<text class="lbl" x="1570" y="1127" style="font-size:16px">GET /orders/me</text>
-<ellipse class="uc" cx="1570" cy="1220" rx="210" ry="52"/>
-<text class="lbl" x="1570" y="1209" style="font-size:16px">Hủy đơn PENDING/FAILED</text>
-<text class="lbl" x="1570" y="1232" style="font-size:16px">POST /orders/:id/cancel</text>
-<g class="actor"><circle cx="155" cy="615" r="16"/><path d="M155 631v53m-29 -37h58m-29 37l-26 35m26 -35l26 35"/></g>
-<text x="155" y="745" style="font-size:17px;font-weight:700" text-anchor="middle">Khách hàng</text>
-<text x="155" y="766" style="font-size:17px;font-weight:700" text-anchor="middle">CUSTOMER</text>
-<g class="actor"><circle cx="2010" cy="705" r="16"/><path d="M2010 721v53m-29 -37h58m-29 37l-26 35m26 -35l26 35"/></g>
-<text x="2010" y="835" style="font-size:17px;font-weight:700" text-anchor="middle">VNPay Sandbox</text>
-<text x="2010" y="856" style="font-size:17px;font-weight:700" text-anchor="middle">IPN có chữ ký</text>
-<rect class="notebox" x="285" y="1320" width="744" height="134" rx="5"/>
-<text class="notetext" x="303" y="1348">Tạo đơn: kiểm tra JWT, giá, mã giảm, tồn; trừ tồn trong transaction.</text>
-<text class="notetext" x="303" y="1371">Thanh toán thất bại chưa tự hoàn tồn; hủy đơn hoặc timeout có thể hoàn tồn.</text>
-<text class="notetext" x="303" y="1394">Retry phải do khách chủ động nhấn; tạo idempotency key mới.</text>
-<rect class="notebox" x="1050" y="1320" width="816" height="134" rx="5"/>
-<text class="notetext" x="1068" y="1348">POST /payments chỉ tạo phiên PENDING cùng checkoutUrl.</text>
-<text class="notetext" x="1068" y="1371">Chỉ signed VNPay IPN được cập nhật Order/Payment; browser return không được.</text>
-<text class="notetext" x="1068" y="1394">IPN giả mạo / sai số tiền bị từ chối; callback lặp không chốt lại.</text>
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1660" viewBox="0 0 2400 1660" role="img" aria-labelledby="title desc">
+  <title id="title">BrewLite - Use Case: Đặt hàng và thanh toán VNPay Sandbox (bố cục tối ưu)</title>
+  <desc id="desc">Bố cục các quan hệ actor, include, extend đã được điều chỉnh tránh giao nhau và giữ nội dung SVG gốc.</desc>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#567366"/>
+    </marker>
+    <style>
+text{font-family:Arial,DejaVu Sans,Liberation Sans,sans-serif;fill:#1f322a}
+.title{font-size:30px;font-weight:700}.sys{font-size:21px;font-weight:700}.section{font-size:19px;font-weight:700;fill:#4f6e60}
+.uc{fill:#f9fbfa;stroke:#37634e;stroke-width:2.3}.ok{fill:#edf7f0;stroke:#4b8d65;stroke-width:2.4}.bad{fill:#fff1ef;stroke:#b96358;stroke-width:2.4}
+.lbl{font-size:20px;text-anchor:middle}.hint{font-size:17px;text-anchor:middle;fill:#3e564a}
+.actor{stroke:#24372e;stroke-width:3.3;fill:none;stroke-linecap:round}.aname{font-size:21px;font-weight:700;text-anchor:middle}
+.assoc{fill:none;stroke:#48685a;stroke-width:2.7;stroke-linejoin:round;stroke-linecap:round}
+.include,.extend{fill:none;stroke:#597566;stroke-width:2;stroke-dasharray:8 6;marker-end:url(#arr);stroke-linejoin:round;stroke-linecap:round}
+.rel{font-size:17px;fill:#415e4d;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:8px;stroke-linejoin:round}
+.note{fill:#fff9e9;stroke:#c99f49;stroke-width:1.6}.note-text{font-size:17px}
+</style>
+  </defs>
+  <rect width="2400" height="1660" fill="#fff"/>
+  <text x="1200" y="55" class="title" text-anchor="middle">BrewLite - Use Case: Đặt hàng và thanh toán VNPay Sandbox</text>
+  <rect x="272" y="105" width="1890" height="1495" rx="12" fill="#fcfdfc" stroke="#315b4a" stroke-width="2.4"/>
+  <text x="1235" y="148" class="sys" text-anchor="middle">BrewLite Web + API</text>
+  <text x="312" y="202" class="section" text-anchor="start">01  ĐẶT HÀNG</text>
+  <text x="312" y="760" class="section" text-anchor="start">02  THANH TOÁN</text>
+  <text x="312" y="1195" class="section" text-anchor="start">03  SAU THANH TOÁN</text>
+  <path d="M158 784 C250 634 314 417 400 332" class="assoc"/>
+  <path d="M164 829 L387 827" class="assoc"/>
+  <path d="M164 865 C245 912 310 1020 389 1030" class="assoc"/>
+  <path d="M162 866 C237 1000 320 1271 397 1295" class="assoc"/>
+  <path d="M157 875 C225 1080 318 1387 398 1412" class="assoc"/>
+  <path d="M2260 843 L2074 843" class="assoc"/>
+  <path d="M801 303 C883 268 935 222 1025 219" class="include"/>
+  <path d="M813 323 C895 327 945 336 1025 340" class="include"/>
+  <path d="M814 348 C905 375 946 446 1025 459" class="include"/>
+  <path d="M804 372 C885 422 954 567 1025 579" class="include"/>
+  <path d="M781 389 C868 469 938 677 1025 699" class="include"/>
+  <text x="923" y="241" class="rel" text-anchor="middle">«include»</text>
+  <text x="928" y="316" class="rel" text-anchor="middle">«include»</text>
+  <text x="930" y="403" class="rel" text-anchor="middle">«include»</text>
+  <text x="940" y="503" class="rel" text-anchor="middle">«include»</text>
+  <text x="946" y="623" class="rel" text-anchor="middle">«include»</text>
+  <path d="M616 457 L616 394" class="extend"/>
+  <text x="687" y="430" class="rel" text-anchor="middle">«extend»</text>
+  <path d="M854 827 L1012 827" class="include"/>
+  <text x="938" y="812" class="rel" text-anchor="middle">«include»</text>
+  <path d="M616 968 L616 890" class="extend"/>
+  <text x="686" y="930" class="rel" text-anchor="middle">«extend»</text>
+  <path d="M1867 904 L1867 948" class="include"/>
+  <text x="1968" y="931" class="rel" text-anchor="middle">«include»</text>
+  <path d="M1651 861 C1560 916 1548 980 1484 995" class="include"/>
+  <text x="1573" y="927" class="rel" text-anchor="middle">«include»</text>
+  <path d="M1218 1190 C1230 1139 1237 1110 1238 1086" class="extend"/>
+  <text x="1163" y="1149" class="rel" text-anchor="middle">«extend»</text>
+  <path d="M1663 1223 C1558 1167 1498 1121 1451 1061" class="extend"/>
+  <text x="1539" y="1152" class="rel" text-anchor="middle">«extend»</text>
+  <ellipse cx="616" cy="335" rx="218" ry="60" class="uc"/>
+  <text x="616" y="328.5" class="lbl" text-anchor="middle">Đặt hàng từ giỏ</text>
+  <text x="616" y="355.5" class="lbl" text-anchor="middle">POST /orders</text>
+  <ellipse cx="1254" cy="219" rx="231" ry="49" class="uc"/>
+  <text x="1254" y="212.5" class="lbl" text-anchor="middle">Xác thực JWT, hồ sơ</text>
+  <text x="1254" y="239.5" class="lbl" text-anchor="middle">và số dư điểm</text>
+  <ellipse cx="1254" cy="340" rx="231" ry="49" class="uc"/>
+  <text x="1254" y="333.5" class="lbl" text-anchor="middle">Kiểm tra giỏ, sản phẩm,</text>
+  <text x="1254" y="360.5" class="lbl" text-anchor="middle">size và topping</text>
+  <ellipse cx="1254" cy="460" rx="231" ry="49" class="uc"/>
+  <text x="1254" y="453.5" class="lbl" text-anchor="middle">Tính giá, xác nhận</text>
+  <text x="1254" y="480.5" class="lbl" text-anchor="middle">khuyến mãi phía server</text>
+  <ellipse cx="1254" cy="580" rx="231" ry="49" class="uc"/>
+  <text x="1254" y="573.5" class="lbl" text-anchor="middle">Kiểm tra và trừ tồn</text>
+  <text x="1254" y="600.5" class="lbl" text-anchor="middle">trong transaction</text>
+  <ellipse cx="1254" cy="700" rx="231" ry="49" class="uc"/>
+  <text x="1254" y="693.5" class="lbl" text-anchor="middle">Tạo Order / OrderItem</text>
+  <text x="1254" y="720.5" class="lbl" text-anchor="middle">PENDING</text>
+  <ellipse cx="616" cy="512" rx="228" ry="55" class="uc"/>
+  <text x="616" y="519.0" class="lbl" text-anchor="middle">Xem trước mã khuyến mãi</text>
+  <ellipse cx="616" cy="827" rx="229" ry="63" class="uc"/>
+  <text x="616" y="820.5" class="lbl" text-anchor="middle">Tạo phiên VNPay Sandbox</text>
+  <text x="616" y="847.5" class="lbl" text-anchor="middle">POST /payments: PENDING</text>
+  <ellipse cx="1254" cy="827" rx="240" ry="55" class="uc"/>
+  <text x="1254" y="820.5" class="lbl" text-anchor="middle">Kiểm tra sở hữu, số tiền,</text>
+  <text x="1254" y="847.5" class="lbl" text-anchor="middle">điểm và Idempotency-Key</text>
+  <ellipse cx="1867" cy="843" rx="207" ry="61" class="uc"/>
+  <text x="1867" y="836.5" class="lbl" text-anchor="middle" style="font-size:18px">Nhận signed VNPay IPN</text>
+  <text x="1867" y="863.5" class="lbl" text-anchor="middle" style="font-size:18px">GET /payments/webhooks/vnpay</text>
+  <ellipse cx="1867" cy="1005" rx="240" ry="57" class="uc"/>
+  <text x="1867" y="998.5" class="lbl" text-anchor="middle">Xác minh chữ ký, merchant,</text>
+  <text x="1867" y="1025.5" class="lbl" text-anchor="middle">mã giao dịch và số tiền</text>
+  <ellipse cx="1254" cy="1028" rx="245" ry="60" class="uc"/>
+  <text x="1254" y="1021.5" class="lbl" text-anchor="middle">Chốt Payment và cập nhật</text>
+  <text x="1254" y="1048.5" class="lbl" text-anchor="middle">trạng thái đơn hàng</text>
+  <ellipse cx="616" cy="1030" rx="230" ry="62" class="uc"/>
+  <text x="616" y="1023.5" class="lbl" text-anchor="middle">Thử lại PAYMENT_FAILED</text>
+  <text x="616" y="1050.5" class="lbl" text-anchor="middle">Idempotency-Key mới</text>
+  <ellipse cx="1235" cy="1267" rx="257" ry="72" class="ok"/>
+  <text x="1235" y="1249.0" class="lbl" text-anchor="middle" style="font-size:19px">SUCCESS → PAID</text>
+  <text x="1235" y="1274.0" class="lbl" text-anchor="middle" style="font-size:19px">Điểm được xử lý một lần;</text>
+  <text x="1235" y="1299.0" class="lbl" text-anchor="middle" style="font-size:19px">xóa đúng dòng giỏ đã mua</text>
+  <ellipse cx="1775" cy="1267" rx="230" ry="72" class="bad"/>
+  <text x="1775" y="1260.5" class="lbl" text-anchor="middle" style="font-size:19px">FAILED → PAYMENT_FAILED</text>
+  <text x="1775" y="1287.5" class="lbl" text-anchor="middle" style="font-size:19px">Giữ giỏ, cho phép thử lại</text>
+  <ellipse cx="616" cy="1295" rx="218" ry="54" class="uc"/>
+  <text x="616" y="1288.5" class="lbl" text-anchor="middle">Xem trạng thái / lịch sử</text>
+  <text x="616" y="1315.5" class="lbl" text-anchor="middle">GET /orders/me</text>
+  <ellipse cx="616" cy="1412" rx="218" ry="54" class="uc"/>
+  <text x="616" y="1405.5" class="lbl" text-anchor="middle" style="font-size:18px">Hủy đơn PENDING/FAILED</text>
+  <text x="616" y="1432.5" class="lbl" text-anchor="middle" style="font-size:18px">POST /orders/:id/cancel</text>
+  <g class="actor">
+    <circle cx="124" cy="753" r="17"/>
+    <path d="M124 770 v60 m-31 -38 h62 m-31 38 l-27 36 m27 -36 l27 36"/>
+  </g>
+  <text x="124" y="892" class="aname" text-anchor="middle">Khách hàng</text>
+  <text x="124" y="916" class="aname" text-anchor="middle">CUSTOMER</text>
+  <g class="actor">
+    <circle cx="2297" cy="751" r="17"/>
+    <path d="M2297 768 v60 m-31 -38 h62 m-31 38 l-27 36 m27 -36 l27 36"/>
+  </g>
+  <text x="2297" y="890" class="aname" text-anchor="middle">VNPay Sandbox</text>
+  <text x="2297" y="914" class="aname" text-anchor="middle">IPN có chữ ký</text>
+  <rect x="307" y="1494" width="895" height="82" rx="6" class="note"/>
+  <text x="325" y="1519" class="note-text" text-anchor="start">Tạo đơn: kiểm tra JWT, giá, mã giảm, tồn; trừ tồn trong transaction.</text>
+  <text x="325" y="1542" class="note-text" text-anchor="start">Thanh toán thất bại chưa tự hoàn tồn; hủy đơn/timeout có thể hoàn tồn.</text>
+  <text x="325" y="1565" class="note-text" text-anchor="start">Retry do khách chủ động nhấn; dùng idempotency key mới.</text>
+  <rect x="1223" y="1494" width="901" height="82" rx="6" class="note"/>
+  <text x="1240" y="1519" class="note-text" text-anchor="start">POST /payments tạo phiên PENDING và checkoutUrl.</text>
+  <text x="1240" y="1542" class="note-text" text-anchor="start">Chỉ signed VNPay IPN cập nhật Order/Payment; browser return không được.</text>
+  <text x="1240" y="1565" class="note-text" text-anchor="start">IPN giả mạo/sai số tiền bị từ chối; callback lặp không chốt lại.</text>
 </svg>
